@@ -48,6 +48,44 @@
     </style>
 </head>
 <body class="bg-gradient-to-br from-dark to-slate-900 text-light min-h-screen font-sans">
+    <!-- 登录模态框 -->
+    <div id="login-modal" class="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center hidden">
+        <div class="bg-slate-800 rounded-2xl w-full max-w-md p-6">
+            <div class="text-center mb-6">
+                <div class="flex items-center justify-center space-x-2 mb-4">
+                    <i class="fa fa-play-circle text-primary text-3xl"></i>
+                    <h2 class="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-primary to-secondary">剧踪</h2>
+                </div>
+                <h3 class="text-xl font-bold">请登录</h3>
+                <p class="text-slate-400 text-sm mt-1">登录以继续使用剧踪</p>
+            </div>
+            
+            <form id="login-form">
+                <div class="mb-5">
+                    <label class="block text-sm font-medium mb-2" for="username">用户名</label>
+                    <input type="text" id="username" class="w-full bg-slate-700/50 border border-slate-600 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-primary" placeholder="输入用户名" required>
+                </div>
+                
+                <div class="mb-6">
+                    <div class="flex justify-between mb-2">
+                        <label class="block text-sm font-medium" for="password">密码</label>
+                    </div>
+                    <input type="password" id="password" class="w-full bg-slate-700/50 border border-slate-600 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-primary" placeholder="输入密码" required>
+                </div>
+                
+                <button type="submit" class="w-full bg-primary hover:bg-primary/90 text-white rounded-lg font-medium py-3 transition-colors">登录</button>
+                
+                <div class="mt-4 text-center">
+                    <p class="text-sm text-slate-400">测试用户: 
+                        <button type="button" class="test-user-btn text-primary hover:underline" data-user="张小明">张小明</button> | 
+                        <button type="button" class="test-user-btn text-primary hover:underline" data-user="李华">李华</button> | 
+                        <button type="button" class="test-user-btn text-primary hover:underline" data-user="王芳">王芳</button>
+                    </p>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <!-- 导航栏 -->
     <header id="navbar" class="fixed top-0 left-0 right-0 z-50 transition-all duration-300">
         <div class="container mx-auto px-4 py-3 flex items-center justify-between backdrop-blur bg-dark/70 border-b border-neutral/20">
@@ -72,8 +110,8 @@
                 
                 <div class="relative group">
                     <button class="flex items-center space-x-2 focus:outline-none">
-                        <img src="https://picsum.photos/id/64/200" alt="用户头像" class="w-8 h-8 rounded-full object-cover border-2 border-primary">
-                        <span class="hidden md:inline font-medium">张小明</span>
+                        <img id="user-avatar" src="https://picsum.photos/id/64/200" alt="用户头像" class="w-8 h-8 rounded-full object-cover border-2 border-primary">
+                        <span id="user-name" class="hidden md:inline font-medium">张小明</span>
                         <i class="fa fa-chevron-down text-xs"></i>
                     </button>
                     
@@ -86,7 +124,7 @@
                             <i class="fa fa-cog mr-2"></i>设置
                         </a>
                         <div class="border-t border-neutral/20 my-1"></div>
-                        <a href="#" class="block px-4 py-2 hover:bg-red-500/20 text-red-400 transition-colors">
+                        <a href="#" id="logout-btn" class="block px-4 py-2 hover:bg-red-500/20 text-red-400 transition-colors">
                             <i class="fa fa-sign-out mr-2"></i>退出登录
                         </a>
                     </div>
@@ -118,7 +156,7 @@
                 <div class="flex flex-col md:flex-row justify-between items-start md:items-center">
                     <div>
                         <h2 class="text-[clamp(1.5rem,3vw,2.5rem)] font-bold mb-2 text-shadow">
-                            嗨，张小明 👋
+                            嗨，<span id="welcome-username">张小明</span> 👋
                         </h2>
                         <p class="text-slate-300 text-lg mb-4">
                             继续你的追剧之旅吧，你有 <span id="updating-count" class="text-primary font-semibold">0 部</span> 剧集正在更新
@@ -703,17 +741,117 @@
     </div>
     
     <script>
+        // 用户管理
+        const UserManager = {
+            // 初始化用户系统
+            init() {
+                const currentUser = this.getCurrentUser();
+                if (!currentUser) {
+                    // 如果没有登录用户，显示登录模态框
+                    document.getElementById('login-modal').classList.remove('hidden');
+                    document.body.style.overflow = 'hidden';
+                } else {
+                    // 更新UI显示当前用户
+                    this.updateUserUI(currentUser);
+                }
+                
+                // 绑定登录表单事件
+                this.bindEvents();
+            },
+            
+            // 获取当前登录用户
+            getCurrentUser() {
+                return JSON.parse(localStorage.getItem('currentUser'));
+            },
+            
+            // 设置当前登录用户
+            setCurrentUser(user) {
+                localStorage.setItem('currentUser', JSON.stringify(user));
+                this.updateUserUI(user);
+                
+                // 隐藏登录模态框
+                document.getElementById('login-modal').classList.add('hidden');
+                document.body.style.overflow = '';
+                
+                // 重新初始化剧集数据
+                DramaManager.init();
+            },
+            
+            // 退出登录
+            logout() {
+                localStorage.removeItem('currentUser');
+                
+                // 显示登录模态框
+                document.getElementById('login-modal').classList.remove('hidden');
+                document.body.style.overflow = 'hidden';
+            },
+            
+            // 更新用户UI显示
+            updateUserUI(user) {
+                document.getElementById('user-name').textContent = user.name;
+                document.getElementById('welcome-username').textContent = user.name;
+                document.getElementById('user-avatar').src = user.avatar;
+                document.getElementById('user-avatar').alt = user.name;
+            },
+            
+            // 绑定事件
+            bindEvents() {
+                // 登录表单提交
+                document.getElementById('login-form').addEventListener('submit', (e) => {
+                    e.preventDefault();
+                    const username = document.getElementById('username').value;
+                    
+                    // 创建用户对象（实际应用中应该通过API验证）
+                    const user = {
+                        name: username,
+                        avatar: `https://picsum.photos/id/${username.charCodeAt(0) % 100}/200`
+                    };
+                    
+                    this.setCurrentUser(user);
+                    document.getElementById('login-form').reset();
+                });
+                
+                // 测试用户登录
+                document.querySelectorAll('.test-user-btn').forEach(btn => {
+                    btn.addEventListener('click', () => {
+                        const userName = btn.getAttribute('data-user');
+                        const user = {
+                            name: userName,
+                            avatar: `https://picsum.photos/id/${userName.charCodeAt(0) % 100}/200`
+                        };
+                        
+                        this.setCurrentUser(user);
+                        document.getElementById('login-form').reset();
+                    });
+                });
+                
+                // 退出登录
+                document.getElementById('logout-btn').addEventListener('click', () => {
+                    if (confirm('确定要退出登录吗？')) {
+                        this.logout();
+                    }
+                });
+            }
+        };
+        
         // 数据管理
         const DramaManager = {
             // 初始化数据
             init() {
-                const dramas = localStorage.getItem('dramas');
+                const currentUser = UserManager.getCurrentUser();
+                if (!currentUser) return;
+                
+                // 为每个用户创建独立的存储空间
+                const userId = currentUser.name;
+                const userDramasKey = `dramas_${userId}`;
+                
+                const dramas = localStorage.getItem(userDramasKey);
                 if (!dramas) {
-                    localStorage.setItem('dramas', JSON.stringify([]));
+                    localStorage.setItem(userDramasKey, JSON.stringify([]));
                 }
                 
                 // 添加示例数据（如果没有数据的话）
-                const initialDramas = JSON.parse(localStorage.getItem('dramas'));
+                const initialDramas = JSON.parse(localStorage.getItem(userDramasKey));
                 if (initialDramas.length === 0) {
                     this.addSampleData();
                 }
@@ -721,8 +859,17 @@
                 this.renderAll();
             },
             
+            // 获取当前用户的剧集存储键
+            getUserDramasKey() {
+                const currentUser = UserManager.getCurrentUser();
+                return currentUser ? `dramas_${currentUser.name}` : null;
+            },
+            
             // 添加示例数据
             addSampleData() {
+                const userDramasKey = this.getUserDramasKey();
+                if (!userDramasKey) return;
+                
                 const sampleData = [
                     {
                         id: Date.now() - 10000,
@@ -796,12 +943,15 @@
                     }
                 ];
                 
-                localStorage.setItem('dramas', JSON.stringify(sampleData));
+                localStorage.setItem(userDramasKey, JSON.stringify(sampleData));
             },
             
             // 获取所有剧集
             getAll() {
-                return JSON.parse(localStorage.getItem('dramas')) || [];
+                const userDramasKey = this.getUserDramasKey();
+                if (!userDramasKey) return [];
+                
+                return JSON.parse(localStorage.getItem(userDramasKey)) || [];
             },
             
             // 获取单个剧集
@@ -812,6 +962,9 @@
             
             // 添加新剧集
             add(drama) {
+                const userDramasKey = this.getUserDramasKey();
+                if (!userDramasKey) return null;
+                
                 const dramas = this.getAll();
                 const newDrama = {
                     id: Date.now(),
@@ -821,13 +974,16 @@
                 };
                 
                 dramas.push(newDrama);
-                localStorage.setItem('dramas', JSON.stringify(dramas));
+                localStorage.setItem(userDramasKey, JSON.stringify(dramas));
                 this.renderAll();
                 return newDrama;
             },
             
             // 更新剧集
             update(id, updatedData) {
+                const userDramasKey = this.getUserDramasKey();
+                if (!userDramasKey) return null;
+                
                 const dramas = this.getAll();
                 const index = dramas.findIndex(drama => drama.id === id);
                 
@@ -838,7 +994,7 @@
                         updatedAt: Date.now()
                     };
                     
-                    localStorage.setItem('dramas', JSON.stringify(dramas));
+                    localStorage.setItem(userDramasKey, JSON.stringify(dramas));
                     this.renderAll();
                     return dramas[index];
                 }
@@ -848,9 +1004,12 @@
             
             // 删除剧集
             delete(id) {
+                const userDramasKey = this.getUserDramasKey();
+                if (!userDramasKey) return;
+                
                 let dramas = this.getAll();
                 dramas = dramas.filter(drama => drama.id !== id);
-                localStorage.setItem('dramas', JSON.stringify(dramas));
+                localStorage.setItem(userDramasKey, JSON.stringify(dramas));
                 this.renderAll();
             },
             
@@ -1644,17 +1803,23 @@
                 reminder: document.getElementById('drama-reminder').checked
             };
             
-            // 如果是编辑模式
-            if (currentDramaId) {
-                DramaManager.update(currentDramaId, dramaData);
-                alert('剧集更新成功！');
-            } else {
-                // 添加新模式
-                DramaManager.add(dramaData);
-                alert('剧集添加成功！');
+            try {
+                // 如果是编辑模式
+                if (currentDramaId) {
+                    DramaManager.update(currentDramaId, dramaData);
+                    alert('剧集更新成功！');
+                } else {
+                    // 添加新模式
+                    DramaManager.add(dramaData);
+                    alert('剧集添加成功！');
+                }
+                
+                // 强制关闭模态框
+                closeModal();
+            } catch (error) {
+                console.error('保存剧集失败:', error);
+                alert('保存失败，请重试');
             }
-            
-            closeModal();
         });
         
         // 添加事件监听器
@@ -1742,7 +1907,7 @@
         
         // 初始化
         window.addEventListener('DOMContentLoaded', function() {
-            DramaManager.init();
+            UserManager.init();
         });
     </script>
 </body>
