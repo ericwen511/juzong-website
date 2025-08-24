@@ -3,21 +3,20 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>剧踪 - 你的追剧记录助手</title>
+    <title>剧踪 - 您的追剧管理平台</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
-    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.8/dist/chart.umd.min.js"></script>
-    <!-- 配置Tailwind自定义主题 -->
     <script>
+        // Tailwind 配置
         tailwind.config = {
             theme: {
                 extend: {
                     colors: {
-                        primary: '#6366f1', // 主色调：靛蓝色，代表信任和稳定
-                        secondary: '#ec4899', // 辅助色：粉色，用于强调和互动元素
-                        dark: '#1e1b4b', // 深色：用于背景
-                        light: '#f5f3ff', // 浅色：用于文本和卡片背景
-                        neutral: '#818cf8', // 中性色：用于次要文本和边框
+                        primary: '#6366f1',
+                        secondary: '#4f46e5',
+                        dark: '#1e1b4b',
+                        darker: '#1e293b',
+                        light: '#f1f5f9'
                     },
                     fontFamily: {
                         sans: ['Inter', 'system-ui', 'sans-serif'],
@@ -31,377 +30,496 @@
             .content-auto {
                 content-visibility: auto;
             }
-            .scrollbar-hide {
-                -ms-overflow-style: none;
-                scrollbar-width: none;
-            }
-            .scrollbar-hide::-webkit-scrollbar {
-                display: none;
+            .backdrop-blur {
+                backdrop-filter: blur(8px);
             }
             .text-shadow {
                 text-shadow: 0 2px 4px rgba(0,0,0,0.1);
             }
-            .backdrop-blur {
-                backdrop-filter: blur(8px);
+            .transition-all-300 {
+                transition: all 300ms ease-in-out;
             }
         }
     </style>
 </head>
-<body class="bg-gradient-to-br from-dark to-slate-900 text-light min-h-screen font-sans">
-    <!-- 登录模态框 -->
-    <div id="login-modal" class="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center hidden">
-        <div class="bg-slate-800 rounded-2xl w-full max-w-md p-6">
-            <div class="text-center mb-6">
-                <div class="flex items-center justify-center space-x-2 mb-4">
-                    <i class="fa fa-play-circle text-primary text-3xl"></i>
-                    <h2 class="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-primary to-secondary">剧踪</h2>
-                </div>
-                <h3 class="text-xl font-bold">请登录</h3>
-                <p class="text-slate-400 text-sm mt-1">登录以继续使用剧踪</p>
-            </div>
-            
-            <form id="login-form">
-                <div class="mb-5">
-                    <label class="block text-sm font-medium mb-2" for="username">用户名</label>
-                    <input type="text" id="username" class="w-full bg-slate-700/50 border border-slate-600 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-primary" placeholder="输入用户名" required>
-                </div>
-                
-                <div class="mb-6">
-                    <div class="flex justify-between mb-2">
-                        <label class="block text-sm font-medium" for="password">密码</label>
-                    </div>
-                    <input type="password" id="password" class="w-full bg-slate-700/50 border border-slate-600 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-primary" placeholder="输入密码" required>
-                </div>
-                
-                <button type="submit" class="w-full bg-primary hover:bg-primary/90 text-white rounded-lg font-medium py-3 transition-colors">登录</button>
-                
-                <div class="mt-4 text-center">
-                    <p class="text-sm text-slate-400">测试用户: 
-                        <button type="button" class="test-user-btn text-primary hover:underline" data-user="张小明">张小明</button> | 
-                        <button type="button" class="test-user-btn text-primary hover:underline" data-user="李华">李华</button> | 
-                        <button type="button" class="test-user-btn text-primary hover:underline" data-user="王芳">王芳</button>
-                    </p>
-                </div>
-            </form>
-        </div>
-    </div>
-
+<body class="bg-gradient-to-br from-darker to-dark text-light min-h-screen flex flex-col">
     <!-- 导航栏 -->
-    <header id="navbar" class="fixed top-0 left-0 right-0 z-50 transition-all duration-300">
-        <div class="container mx-auto px-4 py-3 flex items-center justify-between backdrop-blur bg-dark/70 border-b border-neutral/20">
+    <header class="sticky top-0 z-50 bg-dark/80 backdrop-blur border-b border-primary/20">
+        <div class="container mx-auto px-4 py-3 flex items-center justify-between">
+            <!-- 网站标志 -->
             <div class="flex items-center space-x-2">
-                <i class="fa fa-play-circle text-primary text-3xl"></i>
-                <h1 class="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-primary to-secondary">剧踪</h1>
+                <i class="fa fa-play-circle text-primary text-2xl"></i>
+                <h1 class="text-xl font-bold text-primary">剧踪</h1>
             </div>
             
-            <!-- 桌面导航 -->
+            <!-- 导航链接 - 桌面版 -->
             <nav class="hidden md:flex items-center space-x-8">
-                <a href="#dashboard" class="nav-link font-medium hover:text-primary transition-colors">首页</a>
-                <a href="#collection" class="nav-link font-medium hover:text-primary transition-colors">我的剧集</a>
-                <a href="#friends" class="nav-link font-medium hover:text-primary transition-colors">好友</a>
-                <a href="#statistics" class="nav-link font-medium hover:text-primary transition-colors">统计</a>
+                <a href="#" class="nav-link text-white hover:text-primary transition-all-300 font-medium">首页</a>
+                <a href="#" class="nav-link text-white/70 hover:text-primary transition-all-300">我的剧集</a>
+                <a href="#" class="nav-link text-white/70 hover:text-primary transition-all-300">好友</a>
+                <a href="#" class="nav-link text-white/70 hover:text-primary transition-all-300">统计</a>
             </nav>
             
+            <!-- 用户区域 -->
             <div class="flex items-center space-x-4">
-                <button id="notification-btn" class="relative p-2 rounded-full hover:bg-primary/20 transition-colors">
-                    <i class="fa fa-bell text-xl"></i>
-                    <span class="absolute top-1 right-1 w-2 h-2 bg-secondary rounded-full"></span>
+                <!-- 通知按钮 -->
+                <button id="notificationBtn" class="relative p-2 text-white/70 hover:text-primary transition-all-300">
+                    <i class="fa fa-bell text-lg"></i>
+                    <span class="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
                 </button>
                 
-                <div class="relative group">
-                    <button class="flex items-center space-x-2 focus:outline-none">
-                        <img id="user-avatar" src="https://picsum.photos/id/64/200" alt="用户头像" class="w-8 h-8 rounded-full object-cover border-2 border-primary">
-                        <span id="user-name" class="hidden md:inline font-medium">张小明</span>
-                        <i class="fa fa-chevron-down text-xs"></i>
+                <!-- 用户菜单 -->
+                <div class="relative" id="userMenuContainer">
+                    <button id="userMenuBtn" class="flex items-center space-x-2 focus:outline-none">
+                        <img src="https://picsum.photos/id/64/40/40" alt="用户头像" class="w-8 h-8 rounded-full object-cover border-2 border-primary/50">
+                        <span class="hidden md:inline font-medium">张小明</span>
+                        <i class="fa fa-caret-down text-xs text-white/70"></i>
                     </button>
                     
-                    <!-- 用户菜单 -->
-                    <div class="absolute right-0 mt-2 w-48 bg-slate-800 rounded-lg shadow-lg py-2 z-50 hidden group-hover:block transition-all">
-                        <a href="#profile" class="block px-4 py-2 hover:bg-primary/20 transition-colors">
-                            <i class="fa fa-user mr-2"></i>个人资料
+                    <!-- 用户下拉菜单 -->
+                    <div id="userMenu" class="absolute right-0 mt-2 w-48 bg-darker border border-primary/20 rounded-lg shadow-lg py-2 hidden z-50">
+                        <a href="#" class="block px-4 py-2 text-sm hover:bg-primary/10 transition-all-300" id="profileLink">
+                            <i class="fa fa-user mr-2 text-primary"></i>个人资料
                         </a>
-                        <a href="#settings" class="block px-4 py-2 hover:bg-primary/20 transition-colors">
-                            <i class="fa fa-cog mr-2"></i>设置
+                        <a href="#" class="block px-4 py-2 text-sm hover:bg-primary/10 transition-all-300" id="settingsLink">
+                            <i class="fa fa-cog mr-2 text-primary"></i>设置
                         </a>
-                        <div class="border-t border-neutral/20 my-1"></div>
-                        <a href="#" id="logout-btn" class="block px-4 py-2 hover:bg-red-500/20 text-red-400 transition-colors">
+                        <div class="border-t border-primary/10 my-1"></div>
+                        <a href="#" class="block px-4 py-2 text-sm text-red-400 hover:bg-red-500/10 transition-all-300" id="logoutLink">
                             <i class="fa fa-sign-out mr-2"></i>退出登录
                         </a>
                     </div>
                 </div>
                 
                 <!-- 移动端菜单按钮 -->
-                <button id="mobile-menu-btn" class="md:hidden p-2 rounded-full hover:bg-primary/20 transition-colors">
+                <button id="mobileMenuBtn" class="md:hidden p-2 text-white/70 hover:text-primary transition-all-300">
                     <i class="fa fa-bars text-xl"></i>
                 </button>
             </div>
         </div>
         
         <!-- 移动端导航菜单 -->
-        <div id="mobile-menu" class="md:hidden bg-slate-800 border-t border-neutral/20 hidden">
+        <div id="mobileMenu" class="md:hidden bg-darker border-t border-primary/20 hidden">
             <div class="container mx-auto px-4 py-3 flex flex-col space-y-3">
-                <a href="#dashboard" class="py-2 font-medium hover:text-primary transition-colors">首页</a>
-                <a href="#collection" class="py-2 font-medium hover:text-primary transition-colors">我的剧集</a>
-                <a href="#friends" class="py-2 font-medium hover:text-primary transition-colors">好友</a>
-                <a href="#statistics" class="py-2 font-medium hover:text-primary transition-colors">统计</a>
+                <a href="#" class="py-2 text-white font-medium">首页</a>
+                <a href="#" class="py-2 text-white/70">我的剧集</a>
+                <a href="#" class="py-2 text-white/70">好友</a>
+                <a href="#" class="py-2 text-white/70">统计</a>
             </div>
         </div>
     </header>
 
     <!-- 主内容区 -->
-    <main class="container mx-auto px-4 pt-24 pb-16">
-        <!-- 英雄区/欢迎区 -->
-        <section id="dashboard" class="mb-12">
-            <div class="bg-gradient-to-r from-primary/20 to-secondary/20 rounded-2xl p-6 md:p-8 mb-8">
-                <div class="flex flex-col md:flex-row justify-between items-start md:items-center">
-                    <div>
-                        <h2 class="text-[clamp(1.5rem,3vw,2.5rem)] font-bold mb-2 text-shadow">
-                            嗨，<span id="welcome-username">张小明</span> 👋
-                        </h2>
-                        <p class="text-slate-300 text-lg mb-4">
-                            继续你的追剧之旅吧，你有 <span id="updating-count" class="text-primary font-semibold">0 部</span> 剧集正在更新
-                        </p>
-                        <button id="add-drama-btn" class="bg-primary hover:bg-primary/90 text-white font-medium px-6 py-3 rounded-lg transition-all transform hover:scale-105 flex items-center">
-                            <i class="fa fa-plus mr-2"></i> 添加新剧集
-                        </button>
-                    </div>
-                    <div class="mt-6 md:mt-0">
-                        <img src="https://picsum.photos/id/364/300/200" alt="热门剧集推荐" class="rounded-lg shadow-xl w-full md:w-auto max-w-xs transform rotate-2 hover:rotate-0 transition-transform duration-300">
-                    </div>
-                </div>
+    <main class="flex-grow container mx-auto px-4 py-8">
+        <!-- 欢迎区域 -->
+        <section class="bg-gradient-to-r from-primary/20 to-secondary/20 rounded-2xl p-6 md:p-10 mb-10 relative overflow-hidden">
+            <div class="absolute right-0 top-0 w-1/3 h-full opacity-10">
+                <i class="fa fa-film text-[200px] absolute right-[-50px] top-[-50px] text-primary"></i>
             </div>
             
-            <!-- 继续观看 -->
-            <div class="mb-10">
-                <div class="flex justify-between items-center mb-6">
-                    <h3 class="text-xl font-bold">继续观看</h3>
-                    <a href="#collection" class="text-primary hover:text-primary/80 text-sm font-medium flex items-center">
-                        查看全部 <i class="fa fa-arrow-right ml-1"></i>
-                    </a>
+            <div class="relative z-10 flex flex-col md:flex-row md:items-center justify-between">
+                <div class="mb-6 md:mb-0">
+                    <h2 class="text-[clamp(1.5rem,3vw,2.5rem)] font-bold mb-2">
+                        嗨，张小明 <span class="text-primary">👋</span>
+                    </h2>
+                    <p class="text-white/70 mb-6">继续你的追剧之旅吧，你有 <span class="text-primary font-semibold">0</span> 部剧集正在更新</p>
+                    <button id="addShowBtn" class="bg-primary hover:bg-primary/90 text-white font-medium px-6 py-3 rounded-lg transition-all-300 flex items-center">
+                        <i class="fa fa-plus mr-2"></i> 添加新剧集
+                    </button>
                 </div>
                 
-                <div id="continue-watching-container" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                    <!-- 继续观看的剧集将通过JS动态生成 -->
-                    <div class="col-span-full text-center py-12 text-slate-400">
-                        <i class="fa fa-film text-5xl mb-4 opacity-30"></i>
-                        <p>还没有正在追的剧集</p>
-                        <button id="add-first-drama-btn" class="mt-4 bg-primary/20 hover:bg-primary/30 text-primary px-4 py-2 rounded-lg text-sm font-medium transition-colors">
-                            添加你的第一部剧集
-                        </button>
-                    </div>
-                </div>
-            </div>
-            
-            <!-- 最近更新 -->
-            <div>
-                <div class="flex justify-between items-center mb-6">
-                    <h3 class="text-xl font-bold">最近更新</h3>
-                    <a href="#" class="text-primary hover:text-primary/80 text-sm font-medium flex items-center">
-                        更多更新 <i class="fa fa-arrow-right ml-1"></i>
-                    </a>
-                </div>
-                
-                <div id="recent-updates-container" class="overflow-x-auto scrollbar-hide">
-                    <div class="flex space-x-5 pb-4 min-w-max">
-                        <!-- 最近更新的剧集将通过JS动态生成 -->
-                    </div>
+                <div class="w-full md:w-auto md:max-w-xs rounded-xl overflow-hidden shadow-xl border border-primary/20">
+                    <img src="https://p3-flow-imagex-sign.byteimg.com/tos-cn-i-a9rns2rl98/c2b64f61c59e4a7b92b391ba579d03d0.png~tplv-a9rns2rl98-24:720:720.png?rk3s=1fb89129&x-expires=1756612752&x-signature=GF6AxyQhe2fifHPM0RO8FukZ6q0%3D" 
+                         alt="推荐剧集" class="w-full h-auto object-cover">
                 </div>
             </div>
         </section>
         
-        <!-- 我的剧集收藏 -->
-        <section id="collection" class="mb-12">
-            <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6">
-                <h2 class="text-2xl font-bold mb-4 md:mb-0">我的剧集收藏</h2>
-                
-                <div class="flex flex-wrap gap-3 w-full md:w-auto">
-                    <div class="relative">
-                        <input type="text" id="drama-search" placeholder="搜索剧集..." class="bg-slate-800/50 border border-slate-700 rounded-lg pl-10 pr-4 py-2 w-full md:w-64 focus:outline-none focus:ring-2 focus:ring-primary">
-                        <i class="fa fa-search absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400"></i>
-                    </div>
-                    
-                    <select id="status-filter" class="bg-slate-800/50 border border-slate-700 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-primary">
-                        <option value="all">全部状态</option>
-                        <option value="watching">正在追</option>
-                        <option value="completed">已完结</option>
-                        <option value="dropped">已弃剧</option>
-                        <option value="plan">想看</option>
-                    </select>
-                    
-                    <select id="genre-filter" class="bg-slate-800/50 border border-slate-700 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-primary">
-                        <option value="all">全部类型</option>
-                        <option value="剧情">剧情</option>
-                        <option value="喜剧">喜剧</option>
-                        <option value="悬疑">悬疑</option>
-                        <option value="科幻">科幻</option>
-                        <option value="动作">动作</option>
-                    </select>
-                </div>
-            </div>
-            
-            <!-- 剧集分类标签 -->
-            <div class="flex flex-wrap gap-2 mb-6">
-                <button class="status-filter-btn bg-primary text-white px-4 py-1.5 rounded-full text-sm font-medium" data-status="all">全部</button>
-                <button class="status-filter-btn bg-slate-800/50 hover:bg-slate-700/50 px-4 py-1.5 rounded-full text-sm font-medium transition-colors" data-status="watching">正在追 (<span id="watching-count">0</span>)</button>
-                <button class="status-filter-btn bg-slate-800/50 hover:bg-slate-700/50 px-4 py-1.5 rounded-full text-sm font-medium transition-colors" data-status="completed">已完结 (<span id="completed-count">0</span>)</button>
-                <button class="status-filter-btn bg-slate-800/50 hover:bg-slate-700/50 px-4 py-1.5 rounded-full text-sm font-medium transition-colors" data-status="dropped">已弃剧 (<span id="dropped-count">0</span>)</button>
-                <button class="status-filter-btn bg-slate-800/50 hover:bg-slate-700/50 px-4 py-1.5 rounded-full text-sm font-medium transition-colors" data-status="plan">想看 (<span id="plan-count">0</span>)</button>
+        <!-- 继续观看区域 -->
+        <section class="mb-12">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-xl font-bold">继续观看</h2>
+                <a href="#" class="text-primary hover:text-primary/80 text-sm flex items-center transition-all-300">
+                    查看全部 <i class="fa fa-chevron-right ml-1 text-xs"></i>
+                </a>
             </div>
             
             <!-- 剧集列表 -->
-            <div class="bg-slate-800/30 rounded-xl overflow-hidden border border-slate-700/50">
-                <table class="w-full">
-                    <thead>
-                        <tr class="border-b border-slate-700/50 bg-slate-800/50">
-                            <th class="text-left px-6 py-4 font-semibold">剧集</th>
-                            <th class="text-left px-6 py-4 font-semibold hidden md:table-cell">类型</th>
-                            <th class="text-left px-6 py-4 font-semibold">状态</th>
-                            <th class="text-left px-6 py-4 font-semibold hidden sm:table-cell">进度</th>
-                            <th class="text-left px-6 py-4 font-semibold">操作</th>
-                        </tr>
-                    </thead>
-                    <tbody id="drama-table-body">
-                        <!-- 剧集数据将通过JS动态生成 -->
-                        <tr>
-                            <td colspan="5" class="px-6 py-12 text-center text-slate-400">
-                                <i class="fa fa-film text-5xl mb-4 opacity-30"></i>
-                                <p>你的剧集收藏还是空的</p>
-                                <button id="add-from-collection-btn" class="mt-4 bg-primary/20 hover:bg-primary/30 text-primary px-4 py-2 rounded-lg text-sm font-medium transition-colors">
-                                    添加剧集到收藏
-                                </button>
-                            </td>
-                        </tr>
-                    </tbody>
-                </table>
-                
-                <!-- 分页 -->
-                <div class="px-6 py-4 border-t border-slate-700/50 flex justify-between items-center">
-                    <p id="pagination-info" class="text-sm text-slate-400">显示 0-0 条，共 0 条</p>
-                    <div class="flex space-x-1">
-                        <button class="w-8 h-8 flex items-center justify-center rounded bg-slate-800/50 text-slate-400 hover:bg-primary hover:text-white transition-colors" disabled>
-                            <i class="fa fa-chevron-left text-xs"></i>
-                        </button>
-                        <button class="w-8 h-8 flex items-center justify-center rounded bg-primary text-white">1</button>
-                        <button class="w-8 h-8 flex items-center justify-center rounded bg-slate-800/50 hover:bg-primary hover:text-white transition-colors" disabled>
-                            <i class="fa fa-chevron-right text-xs"></i>
-                        </button>
+            <div id="showsContainer" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+                <!-- 空状态 -->
+                <div class="col-span-full flex flex-col items-center justify-center py-16 text-center">
+                    <div class="w-20 h-20 rounded-full bg-primary/10 flex items-center justify-center mb-4">
+                        <i class="fa fa-film text-4xl text-primary/50"></i>
                     </div>
+                    <p class="text-white/50 mb-4">还没有正在追的剧集</p>
+                    <button id="addFirstShowBtn" class="bg-primary/20 hover:bg-primary/30 text-primary font-medium px-4 py-2 rounded-lg transition-all-300">
+                        添加你的第一部剧集
+                    </button>
                 </div>
             </div>
         </section>
         
-        <!-- 好友区域 -->
-        <section id="friends" class="mb-12">
+        <!-- 推荐剧集区域 -->
+        <section class="mb-12">
             <div class="flex justify-between items-center mb-6">
-                <h2 class="text-2xl font-bold">我的好友</h2>
-                <button class="bg-primary hover:bg-primary/90 text-white font-medium px-4 py-2 rounded-lg transition-all flex items-center">
-                    <i class="fa fa-user-plus mr-2"></i> 添加好友
-                </button>
+                <h2 class="text-xl font-bold">为你推荐</h2>
+                <a href="#" class="text-primary hover:text-primary/80 text-sm flex items-center transition-all-300">
+                    更多推荐 <i class="fa fa-chevron-right ml-1 text-xs"></i>
+                </a>
             </div>
             
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <!-- 好友列表 -->
-                <div class="md:col-span-2 bg-slate-800/30 rounded-xl overflow-hidden border border-slate-700/50">
-                    <div class="p-4 border-b border-slate-700/50 bg-slate-800/50">
-                        <h3 class="font-semibold">好友列表 (12)</h3>
+            <!-- 推荐剧集列表 -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+                <!-- 推荐剧集 1 -->
+                <div class="bg-darker rounded-lg overflow-hidden shadow-md hover:shadow-primary/20 transition-all-300 transform hover:-translate-y-1 cursor-pointer border border-transparent hover:border-primary/30">
+                    <div class="relative">
+                        <img src="https://p3-flow-imagex-sign.byteimg.com/tos-cn-i-a9rns2rl98/21f975c995ff4a52ab91b3e00614fdbc.png~tplv-a9rns2rl98-24:720:720.png?rk3s=1fb89129&x-expires=1756614563&x-signature=adXpwIjAnyVSfK1p1rf6ievBOpw%3D" 
+                             alt="推荐剧集封面" class="w-full aspect-video object-cover">
+                        <span class="absolute bottom-2 right-2 bg-primary/90 text-white text-xs px-2 py-1 rounded">9.2分</span>
                     </div>
-                    
-                    <div class="divide-y divide-slate-700/30">
-                        <!-- 好友项 1 -->
-                        <div class="p-4 hover:bg-slate-800/50 transition-colors flex items-center justify-between">
-                            <div class="flex items-center">
-                                <div class="relative">
-                                    <img src="https://picsum.photos/id/64/100" alt="李华" class="w-10 h-10 rounded-full object-cover">
-                                    <span class="absolute bottom-0 right-0 w-3 h-3 bg-green-500 rounded-full border-2 border-slate-800"></span>
-                                </div>
-                                <div class="ml-3">
-                                    <h4 class="font-medium">李华</h4>
-                                    <p class="text-xs text-slate-400">正在看《曼达洛人》</p>
-                                </div>
-                            </div>
-                            <div class="flex space-x-2">
-                                <button class="p-1.5 text-slate-400 hover:bg-slate-700 rounded transition-colors" title="查看资料">
-                                    <i class="fa fa-user"></i>
-                                </button>
-                                <button class="p-1.5 text-slate-400 hover:bg-slate-700 rounded transition-colors" title="发送消息">
-                                    <i class="fa fa-comment"></i>
-                                </button>
-                            </div>
-                        </div>
-                        
-                        <!-- 好友项 2 -->
-                        <div class="p-4 hover:bg-slate-800/50 transition-colors flex items-center justify-between">
-                            <div class="flex items-center">
-                                <div class="relative">
-                                    <img src="https://picsum.photos/id/65/100" alt="王芳" class="w-10 h-10 rounded-full object-cover">
-                                    <span class="absolute bottom-0 right-0 w-3 h-3 bg-green-500 rounded-full border-2 border-slate-800"></span>
-                                </div>
-                                <div class="ml-3">
-                                    <h4 class="font-medium">王芳</h4>
-                                    <p class="text-xs text-slate-400">刚刚更新了《老友记》进度</p>
-                                </div>
-                            </div>
-                            <div class="flex space-x-2">
-                                <button class="p-1.5 text-slate-400 hover:bg-slate-700 rounded transition-colors" title="查看资料">
-                                    <i class="fa fa-user"></i>
-                                </button>
-                                <button class="p-1.5 text-slate-400 hover:bg-slate-700 rounded transition-colors" title="发送消息">
-                                    <i class="fa fa-comment"></i>
-                                </button>
-                            </div>
-                        </div>
-                        
-                        <!-- 好友项 3 -->
-                        <div class="p-4 hover:bg-slate-800/50 transition-colors flex items-center justify-between">
-                            <div class="flex items-center">
-                                <div class="relative">
-                                    <img src="https://picsum.photos/id/91/100" alt="张伟" class="w-10 h-10 rounded-full object-cover">
-                                    <span class="absolute bottom-0 right-0 w-3 h-3 bg-slate-500 rounded-full border-2 border-slate-800"></span>
-                                </div>
-                                <div class="ml-3">
-                                    <h4 class="font-medium">张伟</h4>
-                                    <p class="text-xs text-slate-400">3天前在线</p>
-                                </div>
-                            </div>
-                            <div class="flex space-x-2">
-                                <button class="p-1.5 text-slate-400 hover:bg-slate-700 rounded transition-colors" title="查看资料">
-                                    <i class="fa fa-user"></i>
-                                </button>
-                                <button class="p-1.5 text-slate-400 hover:bg-slate-700 rounded transition-colors" title="发送消息">
-                                    <i class="fa fa-comment"></i>
-                                </button>
-                            </div>
-                        </div>
-                        
-                        <!-- 好友项 4 -->
-                        <div class="p-4 hover:bg-slate-800/50 transition-colors flex items-center justify-between">
-                            <div class="flex items-center">
-                                <div class="relative">
-                                    <img src="https://picsum.photos/id/26/100" alt="刘梅" class="w-10 h-10 rounded-full object-cover">
-                                    <span class="absolute bottom-0 right-0 w-3 h-3 bg-green-500 rounded-full border-2 border-slate-800"></span>
-                                </div>
-                                <div class="ml-3">
-                                    <h4 class="font-medium">刘梅</h4>
-                                    <p class="text-xs text-slate-400">推荐了《绝命毒师》</p>
-                                </div>
-                            </div>
-                            <div class="flex space-x-2">
-                                <button class="p-1.5 text-slate-400 hover:bg-slate-700 rounded transition-colors" title="查看资料">
-                                    <i class="fa fa-user"></i>
-                                </button>
-                                <button class="p-1.5 text-slate-400 hover:bg-slate-700 rounded transition-colors" title="发送消息">
-                                    <i class="fa fa-comment"></i>
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <div class="p-4 border-t border-slate-700/50 text-center">
-                        <a href="#" class="text-primary hover:text-primary/80 text-sm font-medium">查看全部好友</a>
+                    <div class="p-3">
+                        <h3 class="font-medium truncate">空中浩劫</h3>
+                        <p class="text-white/50 text-sm mt-1">第21季 · 已更新至第3集</p>
                     </div>
                 </div>
                 
-                <!-- 好友动态 -->
-                <div class="bg-slate-800/30 rounded-xl overflow-hidden border border-slate-700/50">
-                    <div class="p-4 border-b border-slate-700/50 bg-slate-800/50">
-                        <h3 class="font-semibold">好友动态
+                <!-- 推荐剧集 2 -->
+                <div class="bg-darker rounded-lg overflow-hidden shadow-md hover:shadow-primary/20 transition-all-300 transform hover:-translate-y-1 cursor-pointer border border-transparent hover:border-primary/30">
+                    <div class="relative">
+                        <img src="https://picsum.photos/id/237/400/225" 
+                             alt="推荐剧集封面" class="w-full aspect-video object-cover">
+                        <span class="absolute bottom-2 right-2 bg-primary/90 text-white text-xs px-2 py-1 rounded">8.7分</span>
+                    </div>
+                    <div class="p-3">
+                        <h3 class="font-medium truncate">城市猎人</h3>
+                        <p class="text-white/50 text-sm mt-1">第1季 · 已更新至第12集</p>
+                    </div>
+                </div>
+                
+                <!-- 推荐剧集 3 -->
+                <div class="bg-darker rounded-lg overflow-hidden shadow-md hover:shadow-primary/20 transition-all-300 transform hover:-translate-y-1 cursor-pointer border border-transparent hover:border-primary/30">
+                    <div class="relative">
+                        <img src="https://picsum.photos/id/1025/400/225" 
+                             alt="推荐剧集封面" class="w-full aspect-video object-cover">
+                        <span class="absolute bottom-2 right-2 bg-primary/90 text-white text-xs px-2 py-1 rounded">9.5分</span>
+                    </div>
+                    <div class="p-3">
+                        <h3 class="font-medium truncate">宇宙时空之旅</h3>
+                        <p class="text-white/50 text-sm mt-1">全季 · 共13集</p>
+                    </div>
+                </div>
+                
+                <!-- 推荐剧集 4 -->
+                <div class="bg-darker rounded-lg overflow-hidden shadow-md hover:shadow-primary/20 transition-all-300 transform hover:-translate-y-1 cursor-pointer border border-transparent hover:border-primary/30">
+                    <div class="relative">
+                        <img src="https://picsum.photos/id/1015/400/225" 
+                             alt="推荐剧集封面" class="w-full aspect-video object-cover">
+                        <span class="absolute bottom-2 right-2 bg-primary/90 text-white text-xs px-2 py-1 rounded">8.9分</span>
+                    </div>
+                    <div class="p-3">
+                        <h3 class="font-medium truncate">极地探险</h3>
+                        <p class="text-white/50 text-sm mt-1">第3季 · 已更新至第8集</p>
+                    </div>
+                </div>
+                
+                <!-- 推荐剧集 5 -->
+                <div class="bg-darker rounded-lg overflow-hidden shadow-md hover:shadow-primary/20 transition-all-300 transform hover:-translate-y-1 cursor-pointer border border-transparent hover:border-primary/30">
+                    <div class="relative">
+                        <img src="https://picsum.photos/id/1019/400/225" 
+                             alt="推荐剧集封面" class="w-full aspect-video object-cover">
+                        <span class="absolute bottom-2 right-2 bg-primary/90 text-white text-xs px-2 py-1 rounded">9.1分</span>
+                    </div>
+                    <div class="p-3">
+                        <h3 class="font-medium truncate">深海探秘</h3>
+                        <p class="text-white/50 text-sm mt-1">第2季 · 已更新至第5集</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- 页脚 -->
+    <footer class="bg-darker border-t border-primary/20 py-8">
+        <div class="container mx-auto px-4">
+            <div class="flex flex-col md:flex-row justify-between items-center">
+                <div class="flex items-center space-x-2 mb-4 md:mb-0">
+                    <i class="fa fa-play-circle text-primary text-xl"></i>
+                    <span class="font-bold text-primary">剧踪</span>
+                </div>
+                
+                <div class="flex space-x-6 mb-4 md:mb-0">
+                    <a href="#" class="text-white/50 hover:text-primary transition-all-300">关于我们</a>
+                    <a href="#" class="text-white/50 hover:text-primary transition-all-300">使用帮助</a>
+                    <a href="#" class="text-white/50 hover:text-primary transition-all-300">联系我们</a>
+                </div>
+                
+                <div class="flex space-x-4">
+                    <a href="#" class="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary hover:bg-primary/20 transition-all-300">
+                        <i class="fa fa-weibo"></i>
+                    </a>
+                    <a href="#" class="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary hover:bg-primary/20 transition-all-300">
+                        <i class="fa fa-wechat"></i>
+                    </a>
+                    <a href="#" class="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary hover:bg-primary/20 transition-all-300">
+                        <i class="fa fa-twitter"></i>
+                    </a>
+                </div>
+            </div>
+            
+            <div class="border-t border-primary/10 mt-6 pt-6 text-center text-white/40 text-sm">
+                &copy; 2023 剧踪. 保留所有权利.
+            </div>
+        </div>
+    </footer>
+
+    <!-- 模态框 - 添加新剧集 -->
+    <div id="addShowModal" class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center hidden">
+        <div class="bg-darker rounded-xl w-full max-w-md mx-4 shadow-2xl transform transition-all-300 scale-95 opacity-0" id="modalContent">
+            <div class="p-6 border-b border-primary/20 flex justify-between items-center">
+                <h3 class="text-xl font-bold">添加新剧集</h3>
+                <button id="closeModalBtn" class="text-white/50 hover:text-white transition-all-300">
+                    <i class="fa fa-times"></i>
+                </button>
+            </div>
+            
+            <div class="p-6">
+                <form id="addShowForm">
+                    <div class="mb-4">
+                        <label for="showName" class="block text-sm font-medium mb-2">剧集名称</label>
+                        <input type="text" id="showName" class="w-full bg-dark border border-primary/30 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-primary/50 text-white" placeholder="输入剧集名称">
+                    </div>
+                    
+                    <div class="mb-4">
+                        <label for="showSeason" class="block text-sm font-medium mb-2">当前季数</label>
+                        <input type="number" id="showSeason" min="1" value="1" class="w-full bg-dark border border-primary/30 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-primary/50 text-white">
+                    </div>
+                    
+                    <div class="mb-4">
+                        <label for="showEpisode" class="block text-sm font-medium mb-2">当前集数</label>
+                        <input type="number" id="showEpisode" min="1" value="1" class="w-full bg-dark border border-primary/30 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-primary/50 text-white">
+                    </div>
+                    
+                    <div class="mb-6">
+                        <label for="showStatus" class="block text-sm font-medium mb-2">状态</label>
+                        <select id="showStatus" class="w-full bg-dark border border-primary/30 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-primary/50 text-white">
+                            <option value="watching">正在观看</option>
+                            <option value="completed">已完成</option>
+                            <option value="paused">已暂停</option>
+                            <option value="planned">计划观看</option>
+                        </select>
+                    </div>
+                    
+                    <button type="submit" class="w-full bg-primary hover:bg-primary/90 text-white font-medium py-3 rounded-lg transition-all-300">
+                        添加剧集
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- 通知提示 -->
+    <div id="notification" class="fixed bottom-4 right-4 bg-darker border border-primary/30 rounded-lg p-4 shadow-lg transform translate-y-20 opacity-0 transition-all-300 flex items-center max-w-xs z-50">
+        <i id="notificationIcon" class="fa fa-check-circle text-green-500 mr-3 text-xl"></i>
+        <p id="notificationText">操作成功</p>
+    </div>
+
+    <script>
+        // DOM 元素
+        const userMenuBtn = document.getElementById('userMenuBtn');
+        const userMenu = document.getElementById('userMenu');
+        const mobileMenuBtn = document.getElementById('mobileMenuBtn');
+        const mobileMenu = document.getElementById('mobileMenu');
+        const addShowBtn = document.getElementById('addShowBtn');
+        const addFirstShowBtn = document.getElementById('addFirstShowBtn');
+        const addShowModal = document.getElementById('addShowModal');
+        const modalContent = document.getElementById('modalContent');
+        const closeModalBtn = document.getElementById('closeModalBtn');
+        const addShowForm = document.getElementById('addShowForm');
+        const notificationBtn = document.getElementById('notificationBtn');
+        const notification = document.getElementById('notification');
+        const notificationIcon = document.getElementById('notificationIcon');
+        const notificationText = document.getElementById('notificationText');
+        const profileLink = document.getElementById('profileLink');
+        const settingsLink = document.getElementById('settingsLink');
+        const logoutLink = document.getElementById('logoutLink');
+        const showsContainer = document.getElementById('showsContainer');
+
+        // 用户菜单切换
+        userMenuBtn.addEventListener('click', () => {
+            userMenu.classList.toggle('hidden');
+        });
+
+        // 移动端菜单切换
+        mobileMenuBtn.addEventListener('click', () => {
+            mobileMenu.classList.toggle('hidden');
+        });
+
+        // 打开添加剧集模态框
+        function openModal() {
+            addShowModal.classList.remove('hidden');
+            // 触发动画
+            setTimeout(() => {
+                modalContent.classList.remove('scale-95', 'opacity-0');
+                modalContent.classList.add('scale-100', 'opacity-100');
+            }, 10);
+        }
+
+        // 关闭添加剧集模态框
+        function closeModal() {
+            modalContent.classList.remove('scale-100', 'opacity-100');
+            modalContent.classList.add('scale-95', 'opacity-0');
+            // 隐藏模态框
+            setTimeout(() => {
+                addShowModal.classList.add('hidden');
+            }, 300);
+        }
+
+        // 添加剧集按钮事件
+        addShowBtn.addEventListener('click', openModal);
+        addFirstShowBtn.addEventListener('click', openModal);
+        closeModalBtn.addEventListener('click', closeModal);
+
+        // 点击模态框外部关闭
+        addShowModal.addEventListener('click', (e) => {
+            if (e.target === addShowModal) {
+                closeModal();
+            }
+        });
+
+        // 显示通知
+        function showNotification(message, isSuccess = true) {
+            notificationText.textContent = message;
+            notificationIcon.className = isSuccess 
+                ? 'fa fa-check-circle text-green-500 mr-3 text-xl' 
+                : 'fa fa-exclamation-circle text-red-500 mr-3 text-xl';
+            
+            notification.classList.remove('translate-y-20', 'opacity-0');
+            notification.classList.add('translate-y-0', 'opacity-100');
+            
+            // 3秒后隐藏通知
+            setTimeout(() => {
+                notification.classList.remove('translate-y-0', 'opacity-100');
+                notification.classList.add('translate-y-20', 'opacity-0');
+            }, 3000);
+        }
+
+        // 通知按钮点击事件
+        notificationBtn.addEventListener('click', () => {
+            showNotification('你有3条新消息待查看');
+        });
+
+        // 表单提交事件 - 添加剧集
+        addShowForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            
+            const showName = document.getElementById('showName').value;
+            const showSeason = document.getElementById('showSeason').value;
+            const showEpisode = document.getElementById('showEpisode').value;
+            const showStatus = document.getElementById('showStatus').value;
+            
+            if (!showName) {
+                showNotification('请输入剧集名称', false);
+                return;
+            }
+            
+            // 模拟添加剧集
+            addNewShow(showName, showSeason, showEpisode, showStatus);
+            
+            // 关闭模态框并重置表单
+            closeModal();
+            addShowForm.reset();
+            document.getElementById('showSeason').value = 1;
+            document.getElementById('showEpisode').value = 1;
+            
+            // 显示成功通知
+            showNotification(`已添加剧集: ${showName}`);
+        });
+
+        // 添加新剧集到列表
+        function addNewShow(name, season, episode, status) {
+            // 如果是空状态，先清空
+            if (showsContainer.querySelector('.col-span-full')) {
+                showsContainer.innerHTML = '';
+            }
+            
+            // 创建新剧集卡片
+            const showCard = document.createElement('div');
+            showCard.className = 'bg-darker rounded-lg overflow-hidden shadow-md hover:shadow-primary/20 transition-all-300 transform hover:-translate-y-1 border border-transparent hover:border-primary/30';
+            
+            // 随机图片ID
+            const randomImgId = Math.floor(Math.random() * 100) + 1;
+            
+            showCard.innerHTML = `
+                <div class="relative">
+                    <img src="https://picsum.photos/id/${randomImgId}/400/225" 
+                         alt="${name}封面" class="w-full aspect-video object-cover">
+                    <span class="absolute bottom-2 right-2 bg-primary/90 text-white text-xs px-2 py-1 rounded">
+                        S${season}E${episode}
+                    </span>
+                </div>
+                <div class="p-3">
+                    <h3 class="font-medium truncate">${name}</h3>
+                    <p class="text-white/50 text-sm mt-1">
+                        ${status === 'watching' ? '正在观看' : 
+                          status === 'completed' ? '已完成' : 
+                          status === 'paused' ? '已暂停' : '计划观看'}
+                    </p>
+                    <div class="flex space-x-2 mt-3">
+                        <button class="flex-1 bg-primary/20 hover:bg-primary/30 text-primary text-xs px-2 py-1 rounded transition-all-300">
+                            <i class="fa fa-play mr-1"></i> 继续看
+                        </button>
+                        <button class="flex-1 bg-dark hover:bg-dark/70 text-white/70 text-xs px-2 py-1 rounded transition-all-300">
+                            <i class="fa fa-edit mr-1"></i> 编辑
+                        </button>
+                    </div>
+                </div>
+            `;
+            
+            showsContainer.appendChild(showCard);
+        }
+
+        // 个人资料链接
+        profileLink.addEventListener('click', (e) => {
+            e.preventDefault();
+            userMenu.classList.add('hidden');
+            showNotification('个人资料页面即将打开');
+            // 实际应用中这里会跳转到个人资料页
+        });
+
+        // 设置链接
+        settingsLink.addEventListener('click', (e) => {
+            e.preventDefault();
+            userMenu.classList.add('hidden');
+            showNotification('设置页面即将打开');
+            // 实际应用中这里会跳转到设置页
+        });
+
+        // 退出登录
+        logoutLink.addEventListener('click', (e) => {
+            e.preventDefault();
+            userMenu.classList.add('hidden');
+            
+            if (confirm('确定要退出登录吗？')) {
+                showNotification('已成功退出登录');
+                // 实际应用中这里会处理退出登录逻辑
+            }
+        });
+
+        // 点击页面其他地方关闭下拉菜单
+        document.addEventListener('click', (e) => {
+            if (!userMenuContainer.contains(e.target)) {
+                userMenu.classList.add('hidden');
+            }
+        });
+
+        // 初始化 - 检查本地存储中的剧集
+        function init() {
+            // 这里可以从本地存储加载已保存的剧集
+            // 为了演示，我们不加载任何剧集，保持空状态
+        }
+
+        // 启动应用
+        init();
+    </script>
+</body>
+</html>
