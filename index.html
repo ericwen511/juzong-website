@@ -1,0 +1,1215 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>剧踪 - 你的追剧记录助手</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.8/dist/chart.umd.min.js"></script>
+    <!-- 配置Tailwind自定义主题 -->
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#6366f1', // 主色调：靛蓝色，代表信任和稳定
+                        secondary: '#ec4899', // 辅助色：粉色，用于强调和互动元素
+                        dark: '#1e1b4b', // 深色：用于背景
+                        light: '#f5f3ff', // 浅色：用于文本和卡片背景
+                        neutral: '#818cf8', // 中性色：用于次要文本和边框
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'system-ui', 'sans-serif'],
+                    },
+                }
+            }
+        }
+    </script>
+    <style type="text/tailwindcss">
+        @layer utilities {
+            .content-auto {
+                content-visibility: auto;
+            }
+            .scrollbar-hide {
+                -ms-overflow-style: none;
+                scrollbar-width: none;
+            }
+            .scrollbar-hide::-webkit-scrollbar {
+                display: none;
+            }
+            .text-shadow {
+                text-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            }
+            .backdrop-blur {
+                backdrop-filter: blur(8px);
+            }
+        }
+    </style>
+</head>
+<body class="bg-gradient-to-br from-dark to-slate-900 text-light min-h-screen font-sans">
+    <!-- 导航栏 -->
+    <header id="navbar" class="fixed top-0 left-0 right-0 z-50 transition-all duration-300">
+        <div class="container mx-auto px-4 py-3 flex items-center justify-between backdrop-blur bg-dark/70 border-b border-neutral/20">
+            <div class="flex items-center space-x-2">
+                <i class="fa fa-play-circle text-primary text-3xl"></i>
+                <h1 class="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-primary to-secondary">剧踪</h1>
+            </div>
+            
+            <!-- 桌面导航 -->
+            <nav class="hidden md:flex items-center space-x-8">
+                <a href="#dashboard" class="nav-link font-medium hover:text-primary transition-colors">首页</a>
+                <a href="#collection" class="nav-link font-medium hover:text-primary transition-colors">我的剧集</a>
+                <a href="#friends" class="nav-link font-medium hover:text-primary transition-colors">好友</a>
+                <a href="#statistics" class="nav-link font-medium hover:text-primary transition-colors">统计</a>
+            </nav>
+            
+            <div class="flex items-center space-x-4">
+                <button id="notification-btn" class="relative p-2 rounded-full hover:bg-primary/20 transition-colors">
+                    <i class="fa fa-bell text-xl"></i>
+                    <span class="absolute top-1 right-1 w-2 h-2 bg-secondary rounded-full"></span>
+                </button>
+                
+                <div class="relative group">
+                    <button class="flex items-center space-x-2 focus:outline-none">
+                        <img src="https://picsum.photos/id/64/200" alt="用户头像" class="w-8 h-8 rounded-full object-cover border-2 border-primary">
+                        <span class="hidden md:inline font-medium">张小明</span>
+                        <i class="fa fa-chevron-down text-xs"></i>
+                    </button>
+                    
+                    <!-- 用户菜单 -->
+                    <div class="absolute right-0 mt-2 w-48 bg-slate-800 rounded-lg shadow-lg py-2 z-50 hidden group-hover:block transition-all">
+                        <a href="#profile" class="block px-4 py-2 hover:bg-primary/20 transition-colors">
+                            <i class="fa fa-user mr-2"></i>个人资料
+                        </a>
+                        <a href="#settings" class="block px-4 py-2 hover:bg-primary/20 transition-colors">
+                            <i class="fa fa-cog mr-2"></i>设置
+                        </a>
+                        <div class="border-t border-neutral/20 my-1"></div>
+                        <a href="#" class="block px-4 py-2 hover:bg-red-500/20 text-red-400 transition-colors">
+                            <i class="fa fa-sign-out mr-2"></i>退出登录
+                        </a>
+                    </div>
+                </div>
+                
+                <!-- 移动端菜单按钮 -->
+                <button id="mobile-menu-btn" class="md:hidden p-2 rounded-full hover:bg-primary/20 transition-colors">
+                    <i class="fa fa-bars text-xl"></i>
+                </button>
+            </div>
+        </div>
+        
+        <!-- 移动端导航菜单 -->
+        <div id="mobile-menu" class="md:hidden bg-slate-800 border-t border-neutral/20 hidden">
+            <div class="container mx-auto px-4 py-3 flex flex-col space-y-3">
+                <a href="#dashboard" class="py-2 font-medium hover:text-primary transition-colors">首页</a>
+                <a href="#collection" class="py-2 font-medium hover:text-primary transition-colors">我的剧集</a>
+                <a href="#friends" class="py-2 font-medium hover:text-primary transition-colors">好友</a>
+                <a href="#statistics" class="py-2 font-medium hover:text-primary transition-colors">统计</a>
+            </div>
+        </div>
+    </header>
+
+    <!-- 主内容区 -->
+    <main class="container mx-auto px-4 pt-24 pb-16">
+        <!-- 英雄区/欢迎区 -->
+        <section id="dashboard" class="mb-12">
+            <div class="bg-gradient-to-r from-primary/20 to-secondary/20 rounded-2xl p-6 md:p-8 mb-8">
+                <div class="flex flex-col md:flex-row justify-between items-start md:items-center">
+                    <div>
+                        <h2 class="text-[clamp(1.5rem,3vw,2.5rem)] font-bold mb-2 text-shadow">
+                            嗨，张小明 👋
+                        </h2>
+                        <p class="text-slate-300 text-lg mb-4">
+                            继续你的追剧之旅吧，你有 <span class="text-primary font-semibold">3 部</span> 剧集正在更新
+                        </p>
+                        <button id="add-drama-btn" class="bg-primary hover:bg-primary/90 text-white font-medium px-6 py-3 rounded-lg transition-all transform hover:scale-105 flex items-center">
+                            <i class="fa fa-plus mr-2"></i> 添加新剧集
+                        </button>
+                    </div>
+                    <div class="mt-6 md:mt-0">
+                        <img src="https://picsum.photos/id/364/300/200" alt="热门剧集推荐" class="rounded-lg shadow-xl w-full md:w-auto max-w-xs transform rotate-2 hover:rotate-0 transition-transform duration-300">
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 继续观看 -->
+            <div class="mb-10">
+                <div class="flex justify-between items-center mb-6">
+                    <h3 class="text-xl font-bold">继续观看</h3>
+                    <a href="#collection" class="text-primary hover:text-primary/80 text-sm font-medium flex items-center">
+                        查看全部 <i class="fa fa-arrow-right ml-1"></i>
+                    </a>
+                </div>
+                
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                    <!-- 剧集卡片 1 -->
+                    <div class="drama-card bg-slate-800/50 rounded-xl overflow-hidden shadow-lg hover:shadow-primary/20 transition-all duration-300 transform hover:-translate-y-1 border border-slate-700/50">
+                        <div class="relative">
+                            <img src="https://picsum.photos/id/111/400/225" alt="绝命毒师" class="w-full h-48 object-cover">
+                            <div class="absolute top-3 right-3 bg-primary/90 text-white text-xs font-bold px-2 py-1 rounded-full">
+                                S02E05
+                            </div>
+                            <div class="absolute inset-0 bg-gradient-to-t from-slate-900 to-transparent opacity-70"></div>
+                        </div>
+                        <div class="p-4">
+                            <div class="flex justify-between items-start mb-2">
+                                <h4 class="font-bold text-lg">绝命毒师</h4>
+                                <div class="flex items-center text-yellow-400 text-sm">
+                                    <i class="fa fa-star"></i>
+                                    <span class="ml-1 text-white">9.2</span>
+                                </div>
+                            </div>
+                            <p class="text-slate-400 text-sm mb-4 line-clamp-2">
+                                讲述了一位普通的高中化学老师在得知自己身患绝症后，为了给家人留下财产，而利用自己超凡的化学知识制造毒品，并成为世界顶级毒王的传奇犯罪故事。
+                            </p>
+                            <div class="w-full bg-slate-700 rounded-full h-2 mb-3">
+                                <div class="bg-primary h-2 rounded-full" style="width: 35%"></div>
+                            </div>
+                            <div class="flex justify-between items-center">
+                                <span class="text-xs text-slate-400">35% 已观看</span>
+                                <button class="bg-primary/20 hover:bg-primary/30 text-primary px-3 py-1 rounded-lg text-sm font-medium transition-colors">
+                                    继续观看
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- 剧集卡片 2 -->
+                    <div class="drama-card bg-slate-800/50 rounded-xl overflow-hidden shadow-lg hover:shadow-primary/20 transition-all duration-300 transform hover:-translate-y-1 border border-slate-700/50">
+                        <div class="relative">
+                            <img src="https://picsum.photos/id/237/400/225" alt="老友记" class="w-full h-48 object-cover">
+                            <div class="absolute top-3 right-3 bg-primary/90 text-white text-xs font-bold px-2 py-1 rounded-full">
+                                S05E12
+                            </div>
+                            <div class="absolute inset-0 bg-gradient-to-t from-slate-900 to-transparent opacity-70"></div>
+                        </div>
+                        <div class="p-4">
+                            <div class="flex justify-between items-start mb-2">
+                                <h4 class="font-bold text-lg">老友记</h4>
+                                <div class="flex items-center text-yellow-400 text-sm">
+                                    <i class="fa fa-star"></i>
+                                    <span class="ml-1 text-white">9.8</span>
+                                </div>
+                            </div>
+                            <p class="text-slate-400 text-sm mb-4 line-clamp-2">
+                                讲述了居住在纽约的六位好朋友从相识到后来一起经历了10年的生活中发生的一系列的故事。
+                            </p>
+                            <div class="w-full bg-slate-700 rounded-full h-2 mb-3">
+                                <div class="bg-primary h-2 rounded-full" style="width: 62%"></div>
+                            </div>
+                            <div class="flex justify-between items-center">
+                                <span class="text-xs text-slate-400">62% 已观看</span>
+                                <button class="bg-primary/20 hover:bg-primary/30 text-primary px-3 py-1 rounded-lg text-sm font-medium transition-colors">
+                                    继续观看
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- 剧集卡片 3 -->
+                    <div class="drama-card bg-slate-800/50 rounded-xl overflow-hidden shadow-lg hover:shadow-primary/20 transition-all duration-300 transform hover:-translate-y-1 border border-slate-700/50">
+                        <div class="relative">
+                            <img src="https://picsum.photos/id/160/400/225" alt="曼达洛人" class="w-full h-48 object-cover">
+                            <div class="absolute top-3 right-3 bg-primary/90 text-white text-xs font-bold px-2 py-1 rounded-full">
+                                S01E03
+                            </div>
+                            <div class="absolute inset-0 bg-gradient-to-t from-slate-900 to-transparent opacity-70"></div>
+                        </div>
+                        <div class="p-4">
+                            <div class="flex justify-between items-start mb-2">
+                                <h4 class="font-bold text-lg">曼达洛人</h4>
+                                <div class="flex items-center text-yellow-400 text-sm">
+                                    <i class="fa fa-star"></i>
+                                    <span class="ml-1 text-white">9.0</span>
+                                </div>
+                            </div>
+                            <p class="text-slate-400 text-sm mb-4 line-clamp-2">
+                                故事的时间线设置在帝国解体后，一位独行的枪手曼达洛人在银河系边远的星球之间穿梭。
+                            </p>
+                            <div class="w-full bg-slate-700 rounded-full h-2 mb-3">
+                                <div class="bg-primary h-2 rounded-full" style="width: 25%"></div>
+                            </div>
+                            <div class="flex justify-between items-center">
+                                <span class="text-xs text-slate-400">25% 已观看</span>
+                                <button class="bg-primary/20 hover:bg-primary/30 text-primary px-3 py-1 rounded-lg text-sm font-medium transition-colors">
+                                    继续观看
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- 剧集卡片 4 -->
+                    <div class="drama-card bg-slate-800/50 rounded-xl overflow-hidden shadow-lg hover:shadow-primary/20 transition-all duration-300 transform hover:-translate-y-1 border border-slate-700/50">
+                        <div class="relative">
+                            <img src="https://picsum.photos/id/175/400/225" alt="瑞克和莫蒂" class="w-full h-48 object-cover">
+                            <div class="absolute top-3 right-3 bg-primary/90 text-white text-xs font-bold px-2 py-1 rounded-full">
+                                S03E06
+                            </div>
+                            <div class="absolute inset-0 bg-gradient-to-t from-slate-900 to-transparent opacity-70"></div>
+                        </div>
+                        <div class="p-4">
+                            <div class="flex justify-between items-start mb-2">
+                                <h4 class="font-bold text-lg">瑞克和莫蒂</h4>
+                                <div class="flex items-center text-yellow-400 text-sm">
+                                    <i class="fa fa-star"></i>
+                                    <span class="ml-1 text-white">9.7</span>
+                                </div>
+                            </div>
+                            <p class="text-slate-400 text-sm mb-4 line-clamp-2">
+                                讲述了天才疯狂科学家瑞克·桑切斯和他善良但容易受影响的外孙莫蒂·史密斯的奇幻冒险故事。
+                            </p>
+                            <div class="w-full bg-slate-700 rounded-full h-2 mb-3">
+                                <div class="bg-primary h-2 rounded-full" style="width: 45%"></div>
+                            </div>
+                            <div class="flex justify-between items-center">
+                                <span class="text-xs text-slate-400">45% 已观看</span>
+                                <button class="bg-primary/20 hover:bg-primary/30 text-primary px-3 py-1 rounded-lg text-sm font-medium transition-colors">
+                                    继续观看
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 最近更新 -->
+            <div>
+                <div class="flex justify-between items-center mb-6">
+                    <h3 class="text-xl font-bold">最近更新</h3>
+                    <a href="#" class="text-primary hover:text-primary/80 text-sm font-medium flex items-center">
+                        更多更新 <i class="fa fa-arrow-right ml-1"></i>
+                    </a>
+                </div>
+                
+                <div class="overflow-x-auto scrollbar-hide">
+                    <div class="flex space-x-5 pb-4 min-w-max">
+                        <!-- 更新项 1 -->
+                        <div class="bg-slate-800/50 rounded-xl overflow-hidden shadow-lg w-64 hover:shadow-primary/20 transition-all duration-300 border border-slate-700/50">
+                            <div class="relative">
+                                <img src="https://picsum.photos/id/111/300/170" alt="绝命毒师" class="w-full h-36 object-cover">
+                                <div class="absolute top-2 right-2 bg-secondary text-white text-xs font-bold px-2 py-1 rounded-full animate-pulse">
+                                    新一集
+                                </div>
+                            </div>
+                            <div class="p-3">
+                                <h4 class="font-bold text-base mb-1">绝命毒师</h4>
+                                <p class="text-xs text-slate-400 mb-2">S02E06 已更新</p>
+                                <button class="w-full bg-secondary/20 hover:bg-secondary/30 text-secondary text-xs font-medium py-1.5 rounded-lg transition-colors">
+                                    立即观看
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <!-- 更新项 2-5 -->
+                        <div class="bg-slate-800/50 rounded-xl overflow-hidden shadow-lg w-64 hover:shadow-primary/20 transition-all duration-300 border border-slate-700/50">
+                            <div class="relative">
+                                <img src="https://picsum.photos/id/237/300/170" alt="老友记" class="w-full h-36 object-cover">
+                                <div class="absolute top-2 right-2 bg-secondary text-white text-xs font-bold px-2 py-1 rounded-full animate-pulse">
+                                    新一集
+                                </div>
+                            </div>
+                            <div class="p-3">
+                                <h4 class="font-bold text-base mb-1">老友记</h4>
+                                <p class="text-xs text-slate-400 mb-2">S05E13 已更新</p>
+                                <button class="w-full bg-secondary/20 hover:bg-secondary/30 text-secondary text-xs font-medium py-1.5 rounded-lg transition-colors">
+                                    立即观看
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <div class="bg-slate-800/50 rounded-xl overflow-hidden shadow-lg w-64 hover:shadow-primary/20 transition-all duration-300 border border-slate-700/50">
+                            <div class="relative">
+                                <img src="https://picsum.photos/id/160/300/170" alt="曼达洛人" class="w-full h-36 object-cover">
+                                <div class="absolute top-2 right-2 bg-secondary text-white text-xs font-bold px-2 py-1 rounded-full animate-pulse">
+                                    新一集
+                                </div>
+                            </div>
+                            <div class="p-3">
+                                <h4 class="font-bold text-base mb-1">曼达洛人</h4>
+                                <p class="text-xs text-slate-400 mb-2">S01E04 已更新</p>
+                                <button class="w-full bg-secondary/20 hover:bg-secondary/30 text-secondary text-xs font-medium py-1.5 rounded-lg transition-colors">
+                                    立即观看
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <div class="bg-slate-800/50 rounded-xl overflow-hidden shadow-lg w-64 hover:shadow-primary/20 transition-all duration-300 border border-slate-700/50">
+                            <div class="relative">
+                                <img src="https://picsum.photos/id/175/300/170" alt="瑞克和莫蒂" class="w-full h-36 object-cover">
+                                <div class="absolute top-2 right-2 bg-secondary text-white text-xs font-bold px-2 py-1 rounded-full animate-pulse">
+                                    新一集
+                                </div>
+                            </div>
+                            <div class="p-3">
+                                <h4 class="font-bold text-base mb-1">瑞克和莫蒂</h4>
+                                <p class="text-xs text-slate-400 mb-2">S03E07 已更新</p>
+                                <button class="w-full bg-secondary/20 hover:bg-secondary/30 text-secondary text-xs font-medium py-1.5 rounded-lg transition-colors">
+                                    立即观看
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <div class="bg-slate-800/50 rounded-xl overflow-hidden shadow-lg w-64 hover:shadow-primary/20 transition-all duration-300 border border-slate-700/50">
+                            <div class="relative">
+                                <img src="https://picsum.photos/id/180/300/170" alt="权力的游戏" class="w-full h-36 object-cover">
+                                <div class="absolute top-2 right-2 bg-secondary text-white text-xs font-bold px-2 py-1 rounded-full animate-pulse">
+                                    新一集
+                                </div>
+                            </div>
+                            <div class="p-3">
+                                <h4 class="font-bold text-base mb-1">权力的游戏</h4>
+                                <p class="text-xs text-slate-400 mb-2">S04E02 已更新</p>
+                                <button class="w-full bg-secondary/20 hover:bg-secondary/30 text-secondary text-xs font-medium py-1.5 rounded-lg transition-colors">
+                                    立即观看
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+        
+        <!-- 我的剧集收藏 -->
+        <section id="collection" class="mb-12">
+            <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6">
+                <h2 class="text-2xl font-bold mb-4 md:mb-0">我的剧集收藏</h2>
+                
+                <div class="flex flex-wrap gap-3 w-full md:w-auto">
+                    <div class="relative">
+                        <input type="text" placeholder="搜索剧集..." class="bg-slate-800/50 border border-slate-700 rounded-lg pl-10 pr-4 py-2 w-full md:w-64 focus:outline-none focus:ring-2 focus:ring-primary">
+                        <i class="fa fa-search absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400"></i>
+                    </div>
+                    
+                    <select class="bg-slate-800/50 border border-slate-700 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-primary">
+                        <option>全部状态</option>
+                        <option>正在追</option>
+                        <option>已完结</option>
+                        <option>已弃剧</option>
+                        <option>想看</option>
+                    </select>
+                    
+                    <select class="bg-slate-800/50 border border-slate-700 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-primary">
+                        <option>全部类型</option>
+                        <option>剧情</option>
+                        <option>喜剧</option>
+                        <option>悬疑</option>
+                        <option>科幻</option>
+                        <option>动作</option>
+                    </select>
+                </div>
+            </div>
+            
+            <!-- 剧集分类标签 -->
+            <div class="flex flex-wrap gap-2 mb-6">
+                <button class="bg-primary text-white px-4 py-1.5 rounded-full text-sm font-medium">全部</button>
+                <button class="bg-slate-800/50 hover:bg-slate-700/50 px-4 py-1.5 rounded-full text-sm font-medium transition-colors">正在追 (8)</button>
+                <button class="bg-slate-800/50 hover:bg-slate-700/50 px-4 py-1.5 rounded-full text-sm font-medium transition-colors">已完结 (12)</button>
+                <button class="bg-slate-800/50 hover:bg-slate-700/50 px-4 py-1.5 rounded-full text-sm font-medium transition-colors">已弃剧 (5)</button>
+                <button class="bg-slate-800/50 hover:bg-slate-700/50 px-4 py-1.5 rounded-full text-sm font-medium transition-colors">想看 (15)</button>
+            </div>
+            
+            <!-- 剧集列表 -->
+            <div class="bg-slate-800/30 rounded-xl overflow-hidden border border-slate-700/50">
+                <table class="w-full">
+                    <thead>
+                        <tr class="border-b border-slate-700/50 bg-slate-800/50">
+                            <th class="text-left px-6 py-4 font-semibold">剧集</th>
+                            <th class="text-left px-6 py-4 font-semibold hidden md:table-cell">类型</th>
+                            <th class="text-left px-6 py-4 font-semibold">状态</th>
+                            <th class="text-left px-6 py-4 font-semibold hidden sm:table-cell">进度</th>
+                            <th class="text-left px-6 py-4 font-semibold">操作</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <!-- 剧集行 1 -->
+                        <tr class="border-b border-slate-700/30 hover:bg-slate-800/50 transition-colors">
+                            <td class="px-6 py-4">
+                                <div class="flex items-center">
+                                    <img src="https://picsum.photos/id/111/100/150" alt="绝命毒师" class="w-12 h-16 object-cover rounded mr-4">
+                                    <div>
+                                        <h4 class="font-medium">绝命毒师</h4>
+                                        <p class="text-sm text-slate-400">S02E05</p>
+                                    </div>
+                                </div>
+                            </td>
+                            <td class="px-6 py-4 hidden md:table-cell">
+                                <span class="bg-blue-900/30 text-blue-300 text-xs px-2 py-1 rounded-full">剧情</span>
+                                <span class="bg-green-900/30 text-green-300 text-xs px-2 py-1 rounded-full ml-2">犯罪</span>
+                            </td>
+                            <td class="px-6 py-4">
+                                <span class="bg-yellow-900/30 text-yellow-300 text-xs px-2 py-1 rounded-full">正在追</span>
+                            </td>
+                            <td class="px-6 py-4 hidden sm:table-cell">
+                                <div class="w-24 bg-slate-700 rounded-full h-1.5">
+                                    <div class="bg-primary h-1.5 rounded-full" style="width: 35%"></div>
+                                </div>
+                                <span class="text-xs text-slate-400 mt-1 block">35%</span>
+                            </td>
+                            <td class="px-6 py-4">
+                                <div class="flex space-x-2">
+                                    <button class="p-1.5 text-primary hover:bg-primary/20 rounded transition-colors" title="编辑">
+                                        <i class="fa fa-pencil"></i>
+                                    </button>
+                                    <button class="p-1.5 text-slate-400 hover:bg-slate-700 rounded transition-colors" title="详情">
+                                        <i class="fa fa-info-circle"></i>
+                                    </button>
+                                    <button class="p-1.5 text-slate-400 hover:bg-slate-700 rounded transition-colors" title="分享">
+                                        <i class="fa fa-share-alt"></i>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                        
+                        <!-- 剧集行 2 -->
+                        <tr class="border-b border-slate-700/30 hover:bg-slate-800/50 transition-colors">
+                            <td class="px-6 py-4">
+                                <div class="flex items-center">
+                                    <img src="https://picsum.photos/id/237/100/150" alt="老友记" class="w-12 h-16 object-cover rounded mr-4">
+                                    <div>
+                                        <h4 class="font-medium">老友记</h4>
+                                        <p class="text-sm text-slate-400">S05E12</p>
+                                    </div>
+                                </div>
+                            </td>
+                            <td class="px-6 py-4 hidden md:table-cell">
+                                <span class="bg-purple-900/30 text-purple-300 text-xs px-2 py-1 rounded-full">喜剧</span>
+                                <span class="bg-pink-900/30 text-pink-300 text-xs px-2 py-1 rounded-full ml-2">爱情</span>
+                            </td>
+                            <td class="px-6 py-4">
+                                <span class="bg-yellow-900/30 text-yellow-300 text-xs px-2 py-1 rounded-full">正在追</span>
+                            </td>
+                            <td class="px-6 py-4 hidden sm:table-cell">
+                                <div class="w-24 bg-slate-700 rounded-full h-1.5">
+                                    <div class="bg-primary h-1.5 rounded-full" style="width: 62%"></div>
+                                </div>
+                                <span class="text-xs text-slate-400 mt-1 block">62%</span>
+                            </td>
+                            <td class="px-6 py-4">
+                                <div class="flex space-x-2">
+                                    <button class="p-1.5 text-primary hover:bg-primary/20 rounded transition-colors" title="编辑">
+                                        <i class="fa fa-pencil"></i>
+                                    </button>
+                                    <button class="p-1.5 text-slate-400 hover:bg-slate-700 rounded transition-colors" title="详情">
+                                        <i class="fa fa-info-circle"></i>
+                                    </button>
+                                    <button class="p-1.5 text-slate-400 hover:bg-slate-700 rounded transition-colors" title="分享">
+                                        <i class="fa fa-share-alt"></i>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                        
+                        <!-- 剧集行 3 -->
+                        <tr class="border-b border-slate-700/30 hover:bg-slate-800/50 transition-colors">
+                            <td class="px-6 py-4">
+                                <div class="flex items-center">
+                                    <img src="https://picsum.photos/id/160/100/150" alt="曼达洛人" class="w-12 h-16 object-cover rounded mr-4">
+                                    <div>
+                                        <h4 class="font-medium">曼达洛人</h4>
+                                        <p class="text-sm text-slate-400">S01E03</p>
+                                    </div>
+                                </div>
+                            </td>
+                            <td class="px-6 py-4 hidden md:table-cell">
+                                <span class="bg-indigo-900/30 text-indigo-300 text-xs px-2 py-1 rounded-full">科幻</span>
+                                <span class="bg-red-900/30 text-red-300 text-xs px-2 py-1 rounded-full ml-2">动作</span>
+                            </td>
+                            <td class="px-6 py-4">
+                                <span class="bg-yellow-900/30 text-yellow-300 text-xs px-2 py-1 rounded-full">正在追</span>
+                            </td>
+                            <td class="px-6 py-4 hidden sm:table-cell">
+                                <div class="w-24 bg-slate-700 rounded-full h-1.5">
+                                    <div class="bg-primary h-1.5 rounded-full" style="width: 25%"></div>
+                                </div>
+                                <span class="text-xs text-slate-400 mt-1 block">25%</span>
+                            </td>
+                            <td class="px-6 py-4">
+                                <div class="flex space-x-2">
+                                    <button class="p-1.5 text-primary hover:bg-primary/20 rounded transition-colors" title="编辑">
+                                        <i class="fa fa-pencil"></i>
+                                    </button>
+                                    <button class="p-1.5 text-slate-400 hover:bg-slate-700 rounded transition-colors" title="详情">
+                                        <i class="fa fa-info-circle"></i>
+                                    </button>
+                                    <button class="p-1.5 text-slate-400 hover:bg-slate-700 rounded transition-colors" title="分享">
+                                        <i class="fa fa-share-alt"></i>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                        
+                        <!-- 剧集行 4 -->
+                        <tr class="border-b border-slate-700/30 hover:bg-slate-800/50 transition-colors">
+                            <td class="px-6 py-4">
+                                <div class="flex items-center">
+                                    <img src="https://picsum.photos/id/180/100/150" alt="权力的游戏" class="w-12 h-16 object-cover rounded mr-4">
+                                    <div>
+                                        <h4 class="font-medium">权力的游戏</h4>
+                                        <p class="text-sm text-slate-400">全季完结</p>
+                                    </div>
+                                </div>
+                            </td>
+                            <td class="px-6 py-4 hidden md:table-cell">
+                                <span class="bg-gray-900/30 text-gray-300 text-xs px-2 py-1 rounded-full">奇幻</span>
+                                <span class="bg-red-900/30 text-red-300 text-xs px-2 py-1 rounded-full ml-2">冒险</span>
+                            </td>
+                            <td class="px-6 py-4">
+                                <span class="bg-green-900/30 text-green-300 text-xs px-2 py-1 rounded-full">已完结</span>
+                            </td>
+                            <td class="px-6 py-4 hidden sm:table-cell">
+                                <div class="w-24 bg-slate-700 rounded-full h-1.5">
+                                    <div class="bg-green-500 h-1.5 rounded-full" style="width: 100%"></div>
+                                </div>
+                                <span class="text-xs text-slate-400 mt-1 block">100%</span>
+                            </td>
+                            <td class="px-6 py-4">
+                                <div class="flex space-x-2">
+                                    <button class="p-1.5 text-primary hover:bg-primary/20 rounded transition-colors" title="编辑">
+                                        <i class="fa fa-pencil"></i>
+                                    </button>
+                                    <button class="p-1.5 text-slate-400 hover:bg-slate-700 rounded transition-colors" title="详情">
+                                        <i class="fa fa-info-circle"></i>
+                                    </button>
+                                    <button class="p-1.5 text-slate-400 hover:bg-slate-700 rounded transition-colors" title="分享">
+                                        <i class="fa fa-share-alt"></i>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                        
+                        <!-- 剧集行 5 -->
+                        <tr class="hover:bg-slate-800/50 transition-colors">
+                            <td class="px-6 py-4">
+                                <div class="flex items-center">
+                                    <img src="https://picsum.photos/id/200/100/150" alt="破产姐妹" class="w-12 h-16 object-cover rounded mr-4">
+                                    <div>
+                                        <h4 class="font-medium">破产姐妹</h4>
+                                        <p class="text-sm text-slate-400">S03E02</p>
+                                    </div>
+                                </div>
+                            </td>
+                            <td class="px-6 py-4 hidden md:table-cell">
+                                <span class="bg-purple-900/30 text-purple-300 text-xs px-2 py-1 rounded-full">喜剧</span>
+                            </td>
+                            <td class="px-6 py-4">
+                                <span class="bg-red-900/30 text-red-300 text-xs px-2 py-1 rounded-full">已弃剧</span>
+                            </td>
+                            <td class="px-6 py-4 hidden sm:table-cell">
+                                <div class="w-24 bg-slate-700 rounded-full h-1.5">
+                                    <div class="bg-red-500 h-1.5 rounded-full" style="width: 30%"></div>
+                                </div>
+                                <span class="text-xs text-slate-400 mt-1 block">30%</span>
+                            </td>
+                            <td class="px-6 py-4">
+                                <div class="flex space-x-2">
+                                    <button class="p-1.5 text-primary hover:bg-primary/20 rounded transition-colors" title="编辑">
+                                        <i class="fa fa-pencil"></i>
+                                    </button>
+                                    <button class="p-1.5 text-slate-400 hover:bg-slate-700 rounded transition-colors" title="详情">
+                                        <i class="fa fa-info-circle"></i>
+                                    </button>
+                                    <button class="p-1.5 text-slate-400 hover:bg-slate-700 rounded transition-colors" title="分享">
+                                        <i class="fa fa-share-alt"></i>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+                
+                <!-- 分页 -->
+                <div class="px-6 py-4 border-t border-slate-700/50 flex justify-between items-center">
+                    <p class="text-sm text-slate-400">显示 1-5 条，共 40 条</p>
+                    <div class="flex space-x-1">
+                        <button class="w-8 h-8 flex items-center justify-center rounded bg-slate-800/50 text-slate-400 hover:bg-primary hover:text-white transition-colors">
+                            <i class="fa fa-chevron-left text-xs"></i>
+                        </button>
+                        <button class="w-8 h-8 flex items-center justify-center rounded bg-primary text-white">1</button>
+                        <button class="w-8 h-8 flex items-center justify-center rounded bg-slate-800/50 hover:bg-primary hover:text-white transition-colors">2</button>
+                        <button class="w-8 h-8 flex items-center justify-center rounded bg-slate-800/50 hover:bg-primary hover:text-white transition-colors">3</button>
+                        <button class="w-8 h-8 flex items-center justify-center rounded bg-slate-800/50 hover:bg-primary hover:text-white transition-colors">4</button>
+                        <button class="w-8 h-8 flex items-center justify-center rounded bg-slate-800/50 hover:bg-primary hover:text-white transition-colors">5</button>
+                        <button class="w-8 h-8 flex items-center justify-center rounded bg-slate-800/50 text-slate-400 hover:bg-primary hover:text-white transition-colors">
+                            <i class="fa fa-chevron-right text-xs"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </section>
+        
+        <!-- 好友区域 -->
+        <section id="friends" class="mb-12">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-2xl font-bold">我的好友</h2>
+                <button class="bg-primary hover:bg-primary/90 text-white font-medium px-4 py-2 rounded-lg transition-all flex items-center">
+                    <i class="fa fa-user-plus mr-2"></i> 添加好友
+                </button>
+            </div>
+            
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <!-- 好友列表 -->
+                <div class="md:col-span-2 bg-slate-800/30 rounded-xl overflow-hidden border border-slate-700/50">
+                    <div class="p-4 border-b border-slate-700/50 bg-slate-800/50">
+                        <h3 class="font-semibold">好友列表 (12)</h3>
+                    </div>
+                    
+                    <div class="divide-y divide-slate-700/30">
+                        <!-- 好友项 1 -->
+                        <div class="p-4 hover:bg-slate-800/50 transition-colors flex items-center justify-between">
+                            <div class="flex items-center">
+                                <div class="relative">
+                                    <img src="https://picsum.photos/id/64/100" alt="李华" class="w-10 h-10 rounded-full object-cover">
+                                    <span class="absolute bottom-0 right-0 w-3 h-3 bg-green-500 rounded-full border-2 border-slate-800"></span>
+                                </div>
+                                <div class="ml-3">
+                                    <h4 class="font-medium">李华</h4>
+                                    <p class="text-xs text-slate-400">正在看《曼达洛人》</p>
+                                </div>
+                            </div>
+                            <div class="flex space-x-2">
+                                <button class="p-1.5 text-slate-400 hover:bg-slate-700 rounded transition-colors" title="查看资料">
+                                    <i class="fa fa-user"></i>
+                                </button>
+                                <button class="p-1.5 text-slate-400 hover:bg-slate-700 rounded transition-colors" title="发送消息">
+                                    <i class="fa fa-comment"></i>
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <!-- 好友项 2 -->
+                        <div class="p-4 hover:bg-slate-800/50 transition-colors flex items-center justify-between">
+                            <div class="flex items-center">
+                                <div class="relative">
+                                    <img src="https://picsum.photos/id/65/100" alt="王芳" class="w-10 h-10 rounded-full object-cover">
+                                    <span class="absolute bottom-0 right-0 w-3 h-3 bg-green-500 rounded-full border-2 border-slate-800"></span>
+                                </div>
+                                <div class="ml-3">
+                                    <h4 class="font-medium">王芳</h4>
+                                    <p class="text-xs text-slate-400">刚刚更新了《老友记》进度</p>
+                                </div>
+                            </div>
+                            <div class="flex space-x-2">
+                                <button class="p-1.5 text-slate-400 hover:bg-slate-700 rounded transition-colors" title="查看资料">
+                                    <i class="fa fa-user"></i>
+                                </button>
+                                <button class="p-1.5 text-slate-400 hover:bg-slate-700 rounded transition-colors" title="发送消息">
+                                    <i class="fa fa-comment"></i>
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <!-- 好友项 3 -->
+                        <div class="p-4 hover:bg-slate-800/50 transition-colors flex items-center justify-between">
+                            <div class="flex items-center">
+                                <div class="relative">
+                                    <img src="https://picsum.photos/id/91/100" alt="张伟" class="w-10 h-10 rounded-full object-cover">
+                                    <span class="absolute bottom-0 right-0 w-3 h-3 bg-slate-500 rounded-full border-2 border-slate-800"></span>
+                                </div>
+                                <div class="ml-3">
+                                    <h4 class="font-medium">张伟</h4>
+                                    <p class="text-xs text-slate-400">3天前在线</p>
+                                </div>
+                            </div>
+                            <div class="flex space-x-2">
+                                <button class="p-1.5 text-slate-400 hover:bg-slate-700 rounded transition-colors" title="查看资料">
+                                    <i class="fa fa-user"></i>
+                                </button>
+                                <button class="p-1.5 text-slate-400 hover:bg-slate-700 rounded transition-colors" title="发送消息">
+                                    <i class="fa fa-comment"></i>
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <!-- 好友项 4 -->
+                        <div class="p-4 hover:bg-slate-800/50 transition-colors flex items-center justify-between">
+                            <div class="flex items-center">
+                                <div class="relative">
+                                    <img src="https://picsum.photos/id/26/100" alt="刘梅" class="w-10 h-10 rounded-full object-cover">
+                                    <span class="absolute bottom-0 right-0 w-3 h-3 bg-green-500 rounded-full border-2 border-slate-800"></span>
+                                </div>
+                                <div class="ml-3">
+                                    <h4 class="font-medium">刘梅</h4>
+                                    <p class="text-xs text-slate-400">推荐了《绝命毒师》</p>
+                                </div>
+                            </div>
+                            <div class="flex space-x-2">
+                                <button class="p-1.5 text-slate-400 hover:bg-slate-700 rounded transition-colors" title="查看资料">
+                                    <i class="fa fa-user"></i>
+                                </button>
+                                <button class="p-1.5 text-slate-400 hover:bg-slate-700 rounded transition-colors" title="发送消息">
+                                    <i class="fa fa-comment"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="p-4 border-t border-slate-700/50 text-center">
+                        <a href="#" class="text-primary hover:text-primary/80 text-sm font-medium">查看全部好友</a>
+                    </div>
+                </div>
+                
+                <!-- 好友动态 -->
+                <div class="bg-slate-800/30 rounded-xl overflow-hidden border border-slate-700/50">
+                    <div class="p-4 border-b border-slate-700/50 bg-slate-800/50">
+                        <h3 class="font-semibold">好友动态</h3>
+                    </div>
+                    
+                    <div class="p-4 max-h-96 overflow-y-auto scrollbar-hide">
+                        <!-- 动态项 1 -->
+                        <div class="mb-6 pb-6 border-b border-slate-700/30 last:border-0 last:mb-0 last:pb-0">
+                            <div class="flex items-start">
+                                <img src="https://picsum.photos/id/65/100" alt="王芳" class="w-8 h-8 rounded-full object-cover mr-3">
+                                <div>
+                                    <p class="text-sm">
+                                        <span class="font-medium">王芳</span>
+                                        <span class="text-slate-400"> 更新了《老友记》的观看进度至 </span>
+                                        <span class="text-primary">S05E12</span>
+                                    </p>
+                                    <p class="text-xs text-slate-500 mt-1">20分钟前</p>
+                                    
+                                    <div class="mt-3 bg-slate-800/50 rounded-lg p-3">
+                                        <div class="flex items-center">
+                                            <img src="https://picsum.photos/id/237/100/150" alt="老友记" class="w-12 h-16 object-cover rounded mr-3">
+                                            <div>
+                                                <h4 class="font-medium text-sm">老友记</h4>
+                                                <div class="w-32 bg-slate-700 rounded-full h-1.5 mt-1">
+                                                    <div class="bg-primary h-1.5 rounded-full" style="width: 62%"></div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- 动态项 2 -->
+                        <div class="mb-6 pb-6 border-b border-slate-700/30 last:border-0 last:mb-0 last:pb-0">
+                            <div class="flex items-start">
+                                <img src="https://picsum.photos/id/64/100" alt="李华" class="w-8 h-8 rounded-full object-cover mr-3">
+                                <div>
+                                    <p class="text-sm">
+                                        <span class="font-medium">李华</span>
+                                        <span class="text-slate-400"> 评论了你的《曼达洛人》笔记：</span>
+                                    </p>
+                                    <p class="text-xs text-slate-500 mt-1">1小时前</p>
+                                    
+                                    <div class="mt-3 bg-slate-800/50 rounded-lg p-3">
+                                        <p class="text-sm italic text-slate-300">"我也觉得这集的特效超棒！特别是飞船追逐那段"</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- 动态项 3 -->
+                        <div class="mb-6 pb-6 border-b border-slate-700/30 last:border-0 last:mb-0 last:pb-0">
+                            <div class="flex items-start">
+                                <img src="https://picsum.photos/id/26/100" alt="刘梅" class="w-8 h-8 rounded-full object-cover mr-3">
+                                <div>
+                                    <p class="text-sm">
+                                        <span class="font-medium">刘梅</span>
+                                        <span class="text-slate-400"> 向你推荐了剧集：</span>
+                                        <span class="text-primary">绝命毒师</span>
+                                    </p>
+                                    <p class="text-xs text-slate-500 mt-1">3小时前</p>
+                                    
+                                    <div class="mt-3 bg-slate-800/50 rounded-lg p-3">
+                                        <div class="flex items-center">
+                                            <img src="https://picsum.photos/id/111/100/150" alt="绝命毒师" class="w-12 h-16 object-cover rounded mr-3">
+                                            <div>
+                                                <h4 class="font-medium text-sm">绝命毒师</h4>
+                                                <p class="text-xs text-slate-400 mt-1">
+                                                    "这部剧的剧情超棒，人物塑造很立体，你一定会喜欢！"
+                                                </p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- 动态项 4 -->
+                        <div class="last:border-0 last:mb-0 last:pb-0">
+                            <div class="flex items-start">
+                                <img src="https://picsum.photos/id/64/100" alt="李华" class="w-8 h-8 rounded-full object-cover mr-3">
+                                <div>
+                                    <p class="text-sm">
+                                        <span class="font-medium">李华</span>
+                                        <span class="text-slate-400"> 完成了《权力的游戏》全季观看</span>
+                                    </p>
+                                    <p class="text-xs text-slate-500 mt-1">昨天</p>
+                                    
+                                    <div class="mt-3 bg-slate-800/50 rounded-lg p-3">
+                                        <div class="flex items-center">
+                                            <img src="https://picsum.photos/id/180/100/150" alt="权力的游戏" class="w-12 h-16 object-cover rounded mr-3">
+                                            <div>
+                                                <h4 class="font-medium text-sm">权力的游戏</h4>
+                                                <div class="flex items-center mt-1">
+                                                    <i class="fa fa-trophy text-yellow-500 mr-1"></i>
+                                                    <span class="text-xs text-slate-300">获得了" binge-watcher "徽章</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+        
+        <!-- 统计数据 -->
+        <section id="statistics" class="mb-12">
+            <h2 class="text-2xl font-bold mb-6">我的追剧统计</h2>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
+                <!-- 统计卡片 1 -->
+                <div class="bg-gradient-to-br from-primary/20 to-primary/10 rounded-xl p-5 border border-primary/20">
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="text-slate-300 font-medium">总追剧数</h3>
+                        <div class="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center">
+                            <i class="fa fa-film text-primary"></i>
+                        </div>
+                    </div>
+                    <p class="text-3xl font-bold">30</p>
+                    <p class="text-sm text-slate-400 mt-1">
+                        <i class="fa fa-arrow-up text-green-400"></i> 较上月增长 5 部
+                    </p>
+                </div>
+                
+                <!-- 统计卡片 2 -->
+                <div class="bg-gradient-to-br from-secondary/20 to-secondary/10 rounded-xl p-5 border border-secondary/20">
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="text-slate-300 font-medium">总观看时长</h3>
+                        <div class="w-10 h-10 rounded-full bg-secondary/20 flex items-center justify-center">
+                            <i class="fa fa-clock-o text-secondary"></i>
+                        </div>
+                    </div>
+                    <p class="text-3xl font-bold">126 小时</p>
+                    <p class="text-sm text-slate-400 mt-1">
+                        <i class="fa fa-arrow-up text-green-400"></i> 较上月增长 24 小时
+                    </p>
+                </div>
+                
+                <!-- 统计卡片 3 -->
+                <div class="bg-gradient-to-br from-green-500/20 to-green-500/10 rounded-xl p-5 border border-green-500/20">
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="text-slate-300 font-medium">已完成</h3>
+                        <div class="w-10 h-10 rounded-full bg-green-500/20 flex items-center justify-center">
+                            <i class="fa fa-check text-green-500"></i>
+                        </div>
+                    </div>
+                    <p class="text-3xl font-bold">12 部</p>
+                    <p class="text-sm text-slate-400 mt-1">
+                        <i class="fa fa-arrow-up text-green-400"></i> 本月完成 2 部
+                    </p>
+                </div>
+                
+                <!-- 统计卡片 4 -->
+                <div class="bg-gradient-to-br from-yellow-500/20 to-yellow-500/10 rounded-xl p-5 border border-yellow-500/20">
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="text-slate-300 font-medium">正在追</h3>
+                        <div class="w-10 h-10 rounded-full bg-yellow-500/20 flex items-center justify-center">
+                            <i class="fa fa-spinner text-yellow-500"></i>
+                        </div>
+                    </div>
+                    <p class="text-3xl font-bold">8 部</p>
+                    <p class="text-sm text-slate-400 mt-1">
+                        <i class="fa fa-minus text-slate-400"></i> 与上月持平
+                    </p>
+                </div>
+            </div>
+            
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <!-- 图表 1：观看时长统计 -->
+                <div class="lg:col-span-2 bg-slate-800/30 rounded-xl p-5 border border-slate-700/50">
+                    <h3 class="font-semibold mb-4">近6个月观看时长</h3>
+                    <div class="h-64">
+                        <canvas id="watchTimeChart"></canvas>
+                    </div>
+                </div>
+                
+                <!-- 图表 2：剧集类型分布 -->
+                <div class="bg-slate-800/30 rounded-xl p-5 border border-slate-700/50">
+                    <h3 class="font-semibold mb-4">剧集类型分布</h3>
+                    <div class="h-64 flex items-center justify-center">
+                        <canvas id="genreChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+    
+    <!-- 页脚 -->
+    <footer class="bg-slate-900/80 border-t border-slate-800">
+        <div class="container mx-auto px-4 py-8">
+            <div class="flex flex-col md:flex-row justify-between items-center">
+                <div class="flex items-center space-x-2 mb-4 md:mb-0">
+                    <i class="fa fa-play-circle text-primary text-2xl"></i>
+                    <h2 class="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-primary to-secondary">剧踪</h2>
+                </div>
+                
+                <div class="flex space-x-6 mb-4 md:mb-0">
+                    <a href="#" class="text-slate-400 hover:text-primary transition-colors">
+                        <i class="fa fa-weibo text-xl"></i>
+                    </a>
+                    <a href="#" class="text-slate-400 hover:text-primary transition-colors">
+                        <i class="fa fa-wechat text-xl"></i>
+                    </a>
+                    <a href="#" class="text-slate-400 hover:text-primary transition-colors">
+                        <i class="fa fa-instagram text-xl"></i>
+                    </a>
+                    <a href="#" class="text-slate-400 hover:text-primary transition-colors">
+                        <i class="fa fa-twitter text-xl"></i>
+                    </a>
+                </div>
+                
+                <div class="text-slate-500 text-sm">
+                    &copy; 2023 剧踪 - 你的追剧记录助手 版权所有
+                </div>
+            </div>
+        </div>
+    </footer>
+    
+    <!-- 添加新剧集模态框 -->
+    <div id="add-drama-modal" class="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center hidden">
+        <div class="bg-slate-800 rounded-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+            <div class="p-6 border-b border-slate-700/50 flex justify-between items-center sticky top-0 bg-slate-800 z-10">
+                <h3 class="text-xl font-bold">添加新剧集</h3>
+                <button id="close-modal-btn" class="text-slate-400 hover:text-white transition-colors">
+                    <i class="fa fa-times text-xl"></i>
+                </button>
+            </div>
+            
+            <div class="p-6">
+                <form id="add-drama-form">
+                    <div class="mb-5">
+                        <label class="block text-sm font-medium mb-2" for="drama-title">剧集名称 <span class="text-red-400">*</span></label>
+                        <input type="text" id="drama-title" class="w-full bg-slate-700/50 border border-slate-600 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-primary" placeholder="输入剧集名称" required>
+                    </div>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-5 mb-5">
+                        <div>
+                            <label class="block text-sm font-medium mb-2" for="drama-platform">播出平台</label>
+                            <select id="drama-platform" class="w-full bg-slate-700/50 border border-slate-600 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-primary">
+                                <option value="">请选择平台</option>
+                                <option value="netflix">Netflix</option>
+                                <option value="tencent">腾讯视频</option>
+                                <option value="iqiyi">爱奇艺</option>
+                                <option value="youku">优酷</option>
+                                <option value="bilibili">哔哩哔哩</option>
+                                <option value="other">其他平台</option>
+                            </select>
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium mb-2" for="drama-status">观看状态 <span class="text-red-400">*</span></label>
+                            <select id="drama-status" class="w-full bg-slate-700/50 border border-slate-600 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-primary" required>
+                                <option value="watching">正在追</option>
+                                <option value="completed">已完结</option>
+                                <option value="dropped">已弃剧</option>
+                                <option value="plan">想看</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-5 mb-5">
+                        <div>
+                            <label class="block text-sm font-medium mb-2" for="drama-current">当前进度</label>
+                            <input type="text" id="drama-current" class="w-full bg-slate-700/50 border border-slate-600 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-primary" placeholder="例如：S01E05">
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium mb-2" for="drama-genre">剧集类型</label>
+                            <input type="text" id="drama-genre" class="w-full bg-slate-700/50 border border-slate-600 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-primary" placeholder="例如：剧情, 悬疑">
+                        </div>
+                    </div>
+                    
+                    <div class="mb-5">
+                        <label class="block text-sm font-medium mb-2" for="drama-notes">剧情笔记</label>
+                        <textarea id="drama-notes" rows="4" class="w-full bg-slate-700/50 border border-slate-600 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-primary" placeholder="记录一些剧情要点或个人感受..."></textarea>
+                    </div>
+                    
+                    <div class="mb-5">
+                        <label class="block text-sm font-medium mb-2">是否接收更新提醒</label>
+                        <div class="flex items-center">
+                            <input type="checkbox" id="drama-reminder" class="w-4 h-4 bg-slate-700 border-slate-600 rounded focus:ring-primary">
+                            <label for="drama-reminder" class="ml-2 text-sm">当有新集更新时通知我</label>
+                        </div>
+                    </div>
+                    
+                    <div class="flex justify-end space-x-3">
+                        <button type="button" id="cancel-add-btn" class="px-6 py-3 bg-slate-700 hover:bg-slate-600 rounded-lg font-medium transition-colors">取消</button>
+                        <button type="submit" class="px-6 py-3 bg-primary hover:bg-primary/90 text-white rounded-lg font-medium transition-colors">添加剧集</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        // 导航栏滚动效果
+        window.addEventListener('scroll', function() {
+            const navbar = document.getElementById('navbar');
+            if (window.scrollY > 50) {
+                navbar.classList.add('bg-dark/90', 'shadow-lg');
+                navbar.classList.remove('bg-transparent');
+            } else {
+                navbar.classList.remove('bg-dark/90', 'shadow-lg');
+            }
+        });
+        
+        // 移动端菜单切换
+        const mobileMenuBtn = document.getElementById('mobile-menu-btn');
+        const mobileMenu = document.getElementById('mobile-menu');
+        
+        mobileMenuBtn.addEventListener('click', function() {
+            mobileMenu.classList.toggle('hidden');
+        });
+        
+        // 模态框控制
+        const addDramaBtn = document.getElementById('add-drama-btn');
+        const addDramaModal = document.getElementById('add-drama-modal');
+        const closeModalBtn = document.getElementById('close-modal-btn');
+        const cancelAddBtn = document.getElementById('cancel-add-btn');
+        const addDramaForm = document.getElementById('add-drama-form');
+        
+        function openModal() {
+            addDramaModal.classList.remove('hidden');
+            document.body.style.overflow = 'hidden';
+        }
+        
+        function closeModal() {
+            addDramaModal.classList.add('hidden');
+            document.body.style.overflow = '';
+        }
+        
+        addDramaBtn.addEventListener('click', openModal);
+        closeModalBtn.addEventListener('click', closeModal);
+        cancelAddBtn.addEventListener('click', closeModal);
+        
+        addDramaForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            // 这里添加表单提交逻辑
+            alert('剧集添加成功！');
+            closeModal();
+        });
+        
+        // 点击模态框外部关闭
+        addDramaModal.addEventListener('click', function(e) {
+            if (e.target === addDramaModal) {
+                closeModal();
+            }
+        });
+        
+        // 图表初始化
+        window.addEventListener('load', function() {
+            // 观看时长图表
+            const watchTimeCtx = document.getElementById('watchTimeChart').getContext('2d');
+            const watchTimeChart = new Chart(watchTimeCtx, {
+                type: 'line',
+                data: {
+                    labels: ['3月', '4月', '5月', '6月', '7月', '8月'],
+                    datasets: [{
+                        label: '观看时长 (小时)',
+                        data: [12, 19, 15, 25, 30, 24],
+                        borderColor: '#6366f1',
+                        backgroundColor: 'rgba(99, 102, 241, 0.1)',
+                        tension: 0.4,
+                        fill: true
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            grid: {
+                                color: 'rgba(255, 255, 255, 0.05)'
+                            },
+                            ticks: {
+                                color: 'rgba(255, 255, 255, 0.7)'
+                            }
+                        },
+                        x: {
+                            grid: {
+                                color: 'rgba(255, 255, 255, 0.05)'
+                            },
+                            ticks: {
+                                color: 'rgba(255, 255, 255, 0.7)'
+                            }
+                        }
+                    }
+                }
+            });
+            
+            // 剧集类型分布图表
+            const genreCtx = document.getElementById('genreChart').getContext('2d');
+            const genreChart = new Chart(genreCtx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['剧情', '喜剧', '悬疑', '科幻', '动作', '其他'],
+                    datasets: [{
+                        data: [8, 6, 5, 4, 3, 4],
+                        backgroundColor: [
+                            '#6366f1',
+                            '#ec4899',
+                            '#10b981',
+                            '#f59e0b',
+                            '#ef4444',
+                            '#6b7280'
+                        ],
+                        borderWidth: 0
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: {
+                                color: 'rgba(255, 255, 255, 0.7)',
+                                padding: 15,
+                                font: {
+                                    size: 11
+                                }
+                            }
+                        }
+                    },
+                    cutout: '65%'
+                }
+            });
+        });
+        
+        // 平滑滚动
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                
+                const targetId = this.getAttribute('href');
+                const targetElement = document.querySelector(targetId);
+                
+                if (targetElement) {
+                    window.scrollTo({
+                        top: targetElement.offsetTop - 80,
+                        behavior: 'smooth'
+                    });
+                    
+                    // 关闭移动菜单（如果打开）
+                    if (!mobileMenu.classList.contains('hidden')) {
+                        mobileMenu.classList.add('hidden');
+                    }
+                }
+            });
+        });
+    </script>
+</body>
+</html>
